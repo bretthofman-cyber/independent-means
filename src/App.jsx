@@ -2,29 +2,97 @@ import { useState, useRef } from "react";
 
 const STORAGE_KEY = "clearpath_v1";
 
+// ─── DEFAULT SCENARIO ASSUMPTIONS (from workbook + reputable AU sources) ─────
+
+const DEFAULT_SCENARIOS = {
+  base: {
+    returnRate: 6.5,
+    inflation: 2.5,
+    propertyGrowth: 4.5,
+    rentalGrowth: 3.0,
+    safeWithdrawal: 4.0,
+  },
+  conservative: {
+    returnRate: 5.5,
+    inflation: 3.0,
+    propertyGrowth: 3.5,
+    rentalGrowth: 2.5,
+    safeWithdrawal: 4.0,
+  },
+  aggressive: {
+    returnRate: 7.5,
+    inflation: 2.0,
+    propertyGrowth: 5.5,
+    rentalGrowth: 3.5,
+    safeWithdrawal: 4.0,
+  },
+};
+
+const ASSUMPTION_RATIONALE = {
+  returnRate: {
+    label: "Investment return (% p.a.)",
+    source: "Based on long-run Australian diversified portfolio returns. Vanguard's 2024 Economic and Market Outlook projects Australian balanced fund returns of 5–8% p.a. over 10 years. The Base case reflects a 60/40 growth/defensive portfolio.",
+  },
+  inflation: {
+    label: "Inflation (% p.a.)",
+    source: "Reserve Bank of Australia (RBA) target band is 2–3%. Base case uses 2.5% (RBA midpoint). Conservative uses 3.0% reflecting stagflation or persistent cost pressure risk. Aggressive uses 2.0% reflecting productivity-led benign inflation.",
+  },
+  propertyGrowth: {
+    label: "Property growth (% p.a.)",
+    source: "Based on long-run Australian residential property capital growth data. CoreLogic's 30-year average is approximately 5.4% nationally; however, this includes periods of above-trend growth. Base case uses a modest 4.5% reflecting regulatory and affordability headwinds.",
+  },
+  rentalGrowth: {
+    label: "Rental income growth (% p.a.)",
+    source: "Base case of 3.0% reflects CPI plus modest real growth — consistent with long-run rental market trends per ABS rental price indexes. Conservative aligns with CPI only; Aggressive reflects tight rental market conditions.",
+  },
+  safeWithdrawal: {
+    label: "Safe withdrawal rate (% p.a.)",
+    source: "The 4% rule originates from the Bengen (1994) study and is widely referenced in Australian financial planning. ASFA and Vanguard research suggests 3.5–4.5% is a reasonable sustainable drawdown rate for a 25–30 year retirement, depending on portfolio composition.",
+  },
+};
+
 const STAGES = [
-  { id: 1, label: "Profile",  icon: "👤", title: "Household Profile",     subtitle: "Let's start with the basics" },
-  { id: 2, label: "Income",   icon: "💰", title: "Income & Cashflow",      subtitle: "Your earnings and spending" },
-  { id: 3, label: "Assets",   icon: "🏦", title: "Assets & Savings",       subtitle: "What you own and hold" },
-  { id: 4, label: "Property", icon: "🏠", title: "Property & Debt",        subtitle: "Leverage and obligations" },
-  { id: 5, label: "Super",    icon: "📈", title: "Superannuation",         subtitle: "Your retirement engine" },
-  { id: 6, label: "Analysis", icon: "✦",  title: "Your Financial Picture", subtitle: "AI-powered insights" },
+  { id: 1, label: "Profile",  icon: "👤", title: "Household Profile",      subtitle: "Let's start with the basics" },
+  { id: 2, label: "Income",   icon: "💰", title: "Income & Cashflow",       subtitle: "Your earnings and spending" },
+  { id: 3, label: "Assets",   icon: "🏦", title: "Assets & Savings",        subtitle: "What you own and hold" },
+  { id: 4, label: "Property", icon: "🏠", title: "Property & Debt",         subtitle: "Leverage and obligations" },
+  { id: 5, label: "Super",    icon: "📈", title: "Superannuation",          subtitle: "Your retirement engine" },
+  { id: 6, label: "Goals",    icon: "🎯", title: "Goals & Scenarios",       subtitle: "Your priorities and planning assumptions" },
+  { id: 7, label: "Analysis", icon: "✦",  title: "Your Financial Picture",  subtitle: "AI-powered insights" },
 ];
 
 const EMPTY_DATA = {
+  // Stage 1
   firstName: "", age: "", partnerAge: "", hasPartner: "no",
   dependants: "0", location: "", employmentStatus: "full-time",
   retirementAge: "65", lifeExpectancy: "90", homeOwnership: "owner",
+  // Stage 2
   grossIncome: "", partnerIncome: "", bonusIncome: "", otherIncome: "",
   monthlyExpenses: "", annualIrregular: "", savingsPerMonth: "",
+  // Stage 3
   cashSavings: "", offsetBalance: "", sharesEtfs: "", managedFunds: "",
   crypto: "", otherInvestments: "", emergencyFund: "",
+  // Stage 4
   ppOrValue: "", mortgageBalance: "", mortgageRate: "", loanType: "pi",
   hasInvestmentProperty: "no", ipValue: "", ipMortgage: "", ipRate: "",
   ipWeeklyRent: "", creditCardDebt: "", personalLoanDebt: "", hecsDebt: "",
+  // Stage 5
   superBalance: "", partnerSuperBalance: "", employerSgRate: "12",
   salarySacrifice: "", insuranceInSuper: "yes", targetRetirementSpending: "",
+  // Stage 6
+  retirementLifestyle: "comfortable",
+  goals: [],
+  riskTolerance: "balanced",
+  activeScenario: "base",
+  useCustomAssumptions: false,
+  customAssumptions: {
+    base: { ...DEFAULT_SCENARIOS.base },
+    conservative: { ...DEFAULT_SCENARIOS.conservative },
+    aggressive: { ...DEFAULT_SCENARIOS.aggressive },
+  },
 };
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 function currency(val) {
   const n = parseFloat(String(val).replace(/,/g, ""));
@@ -35,7 +103,17 @@ function currency(val) {
 function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? { ...EMPTY_DATA, ...JSON.parse(raw) } : { ...EMPTY_DATA };
+    if (!raw) return { ...EMPTY_DATA };
+    const parsed = JSON.parse(raw);
+    return {
+      ...EMPTY_DATA,
+      ...parsed,
+      customAssumptions: {
+        base: { ...DEFAULT_SCENARIOS.base, ...(parsed.customAssumptions?.base || {}) },
+        conservative: { ...DEFAULT_SCENARIOS.conservative, ...(parsed.customAssumptions?.conservative || {}) },
+        aggressive: { ...DEFAULT_SCENARIOS.aggressive, ...(parsed.customAssumptions?.aggressive || {}) },
+      },
+    };
   } catch { return { ...EMPTY_DATA }; }
 }
 
@@ -43,16 +121,39 @@ function saveData(data) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
 }
 
+function getActiveAssumptions(data) {
+  const scenario = data.activeScenario || "base";
+  if (data.useCustomAssumptions && data.customAssumptions?.[scenario]) {
+    return data.customAssumptions[scenario];
+  }
+  return DEFAULT_SCENARIOS[scenario];
+}
+
 function buildPrompt(data) {
   const couple = data.hasPartner === "yes";
   const hasIP = data.hasInvestmentProperty === "yes";
+  const assumptions = getActiveAssumptions(data);
+  const scenario = data.activeScenario || "base";
+  const scenarioLabel = { base: "Base", conservative: "Conservative", aggressive: "Aggressive" }[scenario];
+  const goals = (data.goals || []).join(", ") || "Not specified";
+  const lifestyle = { basic: "Basic / frugal", comfortable: "Comfortable", generous: "Generous / lifestyle-rich" }[data.retirementLifestyle] || "Comfortable";
+  const risk = { conservative: "Conservative", balanced: "Balanced", growth: "Growth-oriented" }[data.riskTolerance] || "Balanced";
+
   return `Please analyse this Australian household's financial position and provide structured insights.
+
+ACTIVE SCENARIO: ${scenarioLabel} ${data.useCustomAssumptions ? "(custom assumptions)" : "(default assumptions)"}
+Planning assumptions: Investment return ${assumptions.returnRate}% p.a. | Inflation ${assumptions.inflation}% p.a. | Property growth ${assumptions.propertyGrowth}% p.a. | Rental growth ${assumptions.rentalGrowth}% p.a. | Safe withdrawal rate ${assumptions.safeWithdrawal}%
 
 HOUSEHOLD PROFILE
 Name: ${data.firstName || "User"} | Age: ${data.age} | ${couple ? `Partner age: ${data.partnerAge} | ` : ""}${couple ? "Couple" : "Single"} | Dependants: ${data.dependants}
 Location: ${data.location} | Employment: ${data.employmentStatus}
 Target retirement age: ${data.retirementAge} | Life expectancy: ${data.lifeExpectancy}
 Home ownership: ${data.homeOwnership}
+
+GOALS & PREFERENCES
+Retirement lifestyle target: ${lifestyle}
+Risk tolerance: ${risk}
+Goals: ${goals}
 
 INCOME & CASHFLOW
 Gross income: ${currency(data.grossIncome)}${couple ? ` | Partner income: ${currency(data.partnerIncome)}` : ""}
@@ -77,10 +178,12 @@ Employer SG rate: ${data.employerSgRate}% | Salary sacrifice: ${currency(data.sa
 Insurance in super: ${data.insuranceInSuper}
 Target retirement spending: ${currency(data.targetRetirementSpending)}/year
 
+Use the active scenario assumptions above in all projections. Acknowledge the scenario clearly in your analysis.
+
 Please structure your response with these exact section headings and write each section completely before moving to the next. Do not repeat or restart any section.
 
 ## Financial Health Summary
-Write 3 sentences summarising their overall position.
+Write 3 sentences summarising their overall position under the ${scenarioLabel} scenario.
 
 ## Strengths
 List 4 specific strengths using numbered points (1. 2. 3. 4.).
@@ -92,13 +195,15 @@ List 4 specific concerns using numbered points (1. 2. 3. 4.).
 List 5 prioritised actions using numbered points (1. 2. 3. 4. 5.). Be specific with dollar amounts where possible.
 
 ## Retirement Outlook
-Write 3-4 sentences assessing retirement readiness based on super trajectory, savings rate and target spending.
+Write 3-4 sentences assessing retirement readiness under the ${scenarioLabel} scenario, referencing the ${assumptions.returnRate}% return and ${assumptions.inflation}% inflation assumptions.
 
 ## One Thing to Do This Month
 Write one specific, concrete sentence describing the single most important action.
 
 End with this exact disclaimer on its own line: This information is general in nature and is intended for educational and planning purposes only. It does not constitute personal financial advice.`;
 }
+
+// ─── FIELD COMPONENTS ────────────────────────────────────────────────────────
 
 function Field({ label, hint, children }) {
   return (
@@ -112,14 +217,10 @@ function Field({ label, hint, children }) {
   );
 }
 
-function Input({ value, onChange, placeholder, type = "text", prefix }) {
+function Input({ value, onChange, placeholder, type = "text", prefix, suffix }) {
   return (
     <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-      {prefix && (
-        <span style={{ position: "absolute", left: 12, fontSize: 14, color: "#6b8f84", fontWeight: 500, pointerEvents: "none" }}>
-          {prefix}
-        </span>
-      )}
+      {prefix && <span style={{ position: "absolute", left: 12, fontSize: 14, color: "#6b8f84", fontWeight: 500, pointerEvents: "none" }}>{prefix}</span>}
       <input
         type={type}
         value={value}
@@ -127,7 +228,7 @@ function Input({ value, onChange, placeholder, type = "text", prefix }) {
         placeholder={placeholder}
         style={{
           width: "100%",
-          padding: prefix ? "11px 14px 11px 26px" : "11px 14px",
+          padding: prefix ? "11px 14px 11px 26px" : suffix ? "11px 36px 11px 14px" : "11px 14px",
           border: "1.5px solid #d4ddd9", borderRadius: 10,
           fontSize: 14, color: "#0f1a16", background: "#f9faf9",
           outline: "none", fontFamily: "inherit", transition: "border-color 0.15s",
@@ -135,6 +236,7 @@ function Input({ value, onChange, placeholder, type = "text", prefix }) {
         onFocus={e => e.target.style.borderColor = "#3d6b5e"}
         onBlur={e => e.target.style.borderColor = "#d4ddd9"}
       />
+      {suffix && <span style={{ position: "absolute", right: 12, fontSize: 13, color: "#6b8f84", pointerEvents: "none" }}>{suffix}</span>}
     </div>
   );
 }
@@ -163,31 +265,21 @@ function Toggle({ value, onChange, options }) {
   return (
     <div style={{ display: "flex", gap: 8 }}>
       {options.map(o => (
-        <button
-          key={o.value}
-          onClick={() => onChange(o.value)}
-          style={{
-            flex: 1, padding: "10px 0", border: "1.5px solid",
-            borderColor: value === o.value ? "#3d6b5e" : "#d4ddd9",
-            borderRadius: 10, fontSize: 13, fontWeight: value === o.value ? 500 : 400,
-            color: value === o.value ? "#3d6b5e" : "#6b7a74",
-            background: value === o.value ? "#eaf2ef" : "#f9faf9",
-            cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
-          }}
-        >
-          {o.label}
-        </button>
+        <button key={o.value} onClick={() => onChange(o.value)} style={{
+          flex: 1, padding: "10px 0", border: "1.5px solid",
+          borderColor: value === o.value ? "#3d6b5e" : "#d4ddd9",
+          borderRadius: 10, fontSize: 13, fontWeight: value === o.value ? 500 : 400,
+          color: value === o.value ? "#3d6b5e" : "#6b7a74",
+          background: value === o.value ? "#eaf2ef" : "#f9faf9",
+          cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+        }}>{o.label}</button>
       ))}
     </div>
   );
 }
 
 function TwoCol({ children }) {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>
-      {children}
-    </div>
-  );
+  return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 20px" }}>{children}</div>;
 }
 
 function SectionDivider({ label }) {
@@ -202,6 +294,8 @@ function SectionDivider({ label }) {
     </div>
   );
 }
+
+// ─── STAGE FORMS 1–5 ────────────────────────────────────────────────────────
 
 function Stage1({ data, set }) {
   return (
@@ -320,7 +414,7 @@ function Stage4({ data, set }) {
             <Field label="Mortgage balance"><Input value={data.mortgageBalance} onChange={v => set("mortgageBalance", v)} placeholder="450,000" prefix="$" /></Field>
           </TwoCol>
           <TwoCol>
-            <Field label="Interest rate"><Input value={data.mortgageRate} onChange={v => set("mortgageRate", v)} placeholder="6.2" prefix="%" /></Field>
+            <Field label="Interest rate"><Input value={data.mortgageRate} onChange={v => set("mortgageRate", v)} placeholder="6.2" suffix="%" /></Field>
             <Field label="Loan type">
               <Select value={data.loanType} onChange={v => set("loanType", v)}
                 options={[{ value: "pi", label: "Principal & Interest" }, { value: "io", label: "Interest Only" }]} />
@@ -340,7 +434,7 @@ function Stage4({ data, set }) {
             <Field label="IP mortgage"><Input value={data.ipMortgage} onChange={v => set("ipMortgage", v)} placeholder="400,000" prefix="$" /></Field>
           </TwoCol>
           <TwoCol>
-            <Field label="IP interest rate"><Input value={data.ipRate} onChange={v => set("ipRate", v)} placeholder="6.5" prefix="%" /></Field>
+            <Field label="IP interest rate"><Input value={data.ipRate} onChange={v => set("ipRate", v)} placeholder="6.5" suffix="%" /></Field>
             <Field label="Weekly rent"><Input value={data.ipWeeklyRent} onChange={v => set("ipWeeklyRent", v)} placeholder="550" prefix="$" /></Field>
           </TwoCol>
         </>
@@ -366,7 +460,7 @@ function Stage5({ data, set }) {
       </TwoCol>
       <TwoCol>
         <Field label="Employer SG rate" hint="Currently 12% for most employees">
-          <Input value={data.employerSgRate} onChange={v => set("employerSgRate", v)} placeholder="12" prefix="%" />
+          <Input value={data.employerSgRate} onChange={v => set("employerSgRate", v)} placeholder="12" suffix="%" />
         </Field>
         <Field label="Salary sacrifice (annual)" hint="Extra contributions above SG">
           <Input value={data.salarySacrifice} onChange={v => set("salarySacrifice", v)} placeholder="0" prefix="$" />
@@ -383,6 +477,285 @@ function Stage5({ data, set }) {
     </div>
   );
 }
+
+// ─── STAGE 6 — GOALS & SCENARIOS ─────────────────────────────────────────────
+
+function AssumptionRow({ fieldKey, value, defaultValue, onChange, isCustom }) {
+  const meta = ASSUMPTION_RATIONALE[fieldKey];
+  const [showSource, setShowSource] = useState(false);
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: "#2d3a35" }}>{meta.label}</div>
+        <button
+          onClick={() => setShowSource(s => !s)}
+          style={{ fontSize: 11, color: "#3d6b5e", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}
+        >
+          {showSource ? "Hide source" : "Why this number?"}
+        </button>
+      </div>
+      {showSource && (
+        <div style={{
+          background: "#eaf2ef", border: "1px solid #c4ddd6", borderRadius: 8,
+          padding: "10px 12px", fontSize: 12, color: "#2d5a4e", lineHeight: 1.6, marginBottom: 8,
+        }}>
+          {meta.source}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+        <input
+          type="number"
+          value={value}
+          onChange={e => onChange(parseFloat(e.target.value) || 0)}
+          disabled={!isCustom}
+          step="0.1"
+          style={{
+            flex: 1, padding: "9px 12px", border: "1.5px solid",
+            borderColor: isCustom ? "#3d6b5e" : "#e2eae6",
+            borderRadius: 8, fontSize: 14, color: isCustom ? "#0f1a16" : "#8a9e98",
+            background: isCustom ? "#f9faf9" : "#f4f7f5",
+            outline: "none", fontFamily: "inherit",
+          }}
+        />
+        <span style={{ fontSize: 13, color: "#6b8f84", width: 20 }}>%</span>
+        {isCustom && value !== defaultValue && (
+          <button
+            onClick={() => onChange(defaultValue)}
+            style={{ fontSize: 11, color: "#9a3922", background: "none", border: "1px solid #f0d0c4", borderRadius: 6, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
+          >
+            Reset
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ScenarioPanel({ scenarioKey, label, data, set, isActive, isCustom }) {
+  const assumptions = isCustom
+    ? (data.customAssumptions?.[scenarioKey] || DEFAULT_SCENARIOS[scenarioKey])
+    : DEFAULT_SCENARIOS[scenarioKey];
+
+  function updateAssumption(field, value) {
+    const updated = {
+      ...data.customAssumptions,
+      [scenarioKey]: {
+        ...(data.customAssumptions?.[scenarioKey] || DEFAULT_SCENARIOS[scenarioKey]),
+        [field]: value,
+      },
+    };
+    set("customAssumptions", updated);
+  }
+
+  const colors = {
+    base: { bg: "#eaf2ef", border: "#c4ddd6", active: "#3d6b5e" },
+    conservative: { bg: "#f5f0eb", border: "#e0d5c5", active: "#8a6a3a" },
+    aggressive: { bg: "#eaf0f7", border: "#c4d5e8", active: "#3a5a8a" },
+  };
+  const c = colors[scenarioKey];
+
+  return (
+    <div style={{
+      border: "2px solid", borderColor: isActive ? c.active : c.border,
+      borderRadius: 12, overflow: "hidden", transition: "border-color 0.2s",
+    }}>
+      <button
+        onClick={() => set("activeScenario", scenarioKey)}
+        style={{
+          width: "100%", padding: "12px 16px", background: isActive ? c.bg : "white",
+          border: "none", cursor: "pointer", display: "flex", alignItems: "center",
+          justifyContent: "space-between", fontFamily: "inherit",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 18, height: 18, borderRadius: "50%", border: "2px solid",
+            borderColor: isActive ? c.active : "#d4ddd9",
+            background: isActive ? c.active : "white",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            {isActive && <div style={{ width: 6, height: 6, borderRadius: "50%", background: "white" }} />}
+          </div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: isActive ? c.active : "#2d3a35" }}>{label}</div>
+        </div>
+        <div style={{ fontSize: 12, color: "#8a9e98" }}>
+          {assumptions.returnRate}% return · {assumptions.inflation}% inflation · {assumptions.propertyGrowth}% property
+        </div>
+      </button>
+
+      {isActive && (
+        <div style={{ padding: "16px", background: "white", borderTop: "1px solid", borderColor: c.border }}>
+          {Object.keys(ASSUMPTION_RATIONALE).map(key => (
+            <AssumptionRow
+              key={key}
+              fieldKey={key}
+              value={assumptions[key]}
+              defaultValue={DEFAULT_SCENARIOS[scenarioKey][key]}
+              onChange={v => updateAssumption(key, v)}
+              isCustom={isCustom}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const GOAL_OPTIONS = [
+  { value: "travel", label: "✈️  Travel extensively in retirement" },
+  { value: "inheritance", label: "🏡  Leave an inheritance for family" },
+  { value: "education", label: "🎓  Fund children's education" },
+  { value: "property", label: "🏠  Buy another property" },
+  { value: "payoff-home", label: "🔑  Pay off home before retiring" },
+  { value: "early-retire", label: "⏰  Retire earlier than planned" },
+  { value: "business", label: "💼  Start or invest in a business" },
+  { value: "charity", label: "❤️  Give to charity or causes" },
+];
+
+function Stage6({ data, set }) {
+  const goals = data.goals || [];
+
+  function toggleGoal(value) {
+    const updated = goals.includes(value)
+      ? goals.filter(g => g !== value)
+      : [...goals, value];
+    set("goals", updated);
+  }
+
+  return (
+    <div>
+      <Field label="What retirement lifestyle are you planning for?">
+        <div style={{ display: "flex", gap: 8 }}>
+          {[
+            { value: "basic", label: "Basic", desc: "Modest, needs-based" },
+            { value: "comfortable", label: "Comfortable", desc: "ASFA comfortable standard" },
+            { value: "generous", label: "Generous", desc: "Lifestyle-rich" },
+          ].map(o => (
+            <button
+              key={o.value}
+              onClick={() => set("retirementLifestyle", o.value)}
+              style={{
+                flex: 1, padding: "12px 8px", border: "1.5px solid",
+                borderColor: data.retirementLifestyle === o.value ? "#3d6b5e" : "#d4ddd9",
+                borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
+                background: data.retirementLifestyle === o.value ? "#eaf2ef" : "#f9faf9",
+                transition: "all 0.15s",
+              }}
+            >
+              <div style={{ fontSize: 13, fontWeight: 600, color: data.retirementLifestyle === o.value ? "#3d6b5e" : "#2d3a35", marginBottom: 3 }}>{o.label}</div>
+              <div style={{ fontSize: 11, color: "#8a9e98" }}>{o.desc}</div>
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      <Field label="Risk tolerance">
+        <Toggle
+          value={data.riskTolerance}
+          onChange={v => set("riskTolerance", v)}
+          options={[
+            { value: "conservative", label: "Conservative" },
+            { value: "balanced", label: "Balanced" },
+            { value: "growth", label: "Growth" },
+          ]}
+        />
+      </Field>
+
+      <Field label="What are your key financial goals?" hint="Select all that apply">
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {GOAL_OPTIONS.map(o => (
+            <button
+              key={o.value}
+              onClick={() => toggleGoal(o.value)}
+              style={{
+                padding: "10px 14px", border: "1.5px solid",
+                borderColor: goals.includes(o.value) ? "#3d6b5e" : "#d4ddd9",
+                borderRadius: 10, cursor: "pointer", fontFamily: "inherit",
+                background: goals.includes(o.value) ? "#eaf2ef" : "#f9faf9",
+                fontSize: 13, color: goals.includes(o.value) ? "#3d6b5e" : "#2d3a35",
+                textAlign: "left", display: "flex", alignItems: "center", gap: 10,
+                transition: "all 0.15s",
+              }}
+            >
+              <div style={{
+                width: 18, height: 18, borderRadius: 5, border: "2px solid",
+                borderColor: goals.includes(o.value) ? "#3d6b5e" : "#d4ddd9",
+                background: goals.includes(o.value) ? "#3d6b5e" : "white",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                flexShrink: 0,
+              }}>
+                {goals.includes(o.value) && <span style={{ color: "white", fontSize: 11, lineHeight: 1 }}>✓</span>}
+              </div>
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </Field>
+
+      <SectionDivider label="Planning scenario & assumptions" />
+
+      <div style={{
+        background: "#f4f7f5", border: "1px solid #e2eae6", borderRadius: 10,
+        padding: "12px 14px", marginBottom: 16,
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: "#2d3a35", marginBottom: 4 }}>
+          How do assumptions work?
+        </div>
+        <div style={{ fontSize: 12, color: "#6b8f84", lineHeight: 1.6 }}>
+          Select a scenario below to run your analysis under different market conditions.
+          By default, each scenario uses carefully researched assumptions. If you want to adjust
+          any numbers, turn on custom assumptions — you can always reset back to defaults.
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div style={{ fontSize: 13, fontWeight: 500, color: "#2d3a35" }}>Assumptions mode</div>
+        <button
+          onClick={() => set("useCustomAssumptions", !data.useCustomAssumptions)}
+          style={{
+            display: "flex", alignItems: "center", gap: 8, padding: "6px 12px",
+            border: "1.5px solid", borderColor: data.useCustomAssumptions ? "#3d6b5e" : "#d4ddd9",
+            borderRadius: 20, background: data.useCustomAssumptions ? "#eaf2ef" : "white",
+            cursor: "pointer", fontFamily: "inherit", fontSize: 12,
+            color: data.useCustomAssumptions ? "#3d6b5e" : "#6b7a74",
+          }}
+        >
+          <div style={{
+            width: 32, height: 18, borderRadius: 9, background: data.useCustomAssumptions ? "#3d6b5e" : "#d4ddd9",
+            position: "relative", transition: "background 0.2s",
+          }}>
+            <div style={{
+              width: 14, height: 14, borderRadius: "50%", background: "white",
+              position: "absolute", top: 2, left: data.useCustomAssumptions ? 16 : 2,
+              transition: "left 0.2s",
+            }} />
+          </div>
+          {data.useCustomAssumptions ? "Custom assumptions on" : "Using default assumptions"}
+        </button>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {[
+          { key: "base", label: "Base — most likely case" },
+          { key: "conservative", label: "Conservative — stress test" },
+          { key: "aggressive", label: "Aggressive — upside case" },
+        ].map(s => (
+          <ScenarioPanel
+            key={s.key}
+            scenarioKey={s.key}
+            label={s.label}
+            data={data}
+            set={set}
+            isActive={data.activeScenario === s.key}
+            isCustom={!!data.useCustomAssumptions}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── MARKDOWN RENDERER ───────────────────────────────────────────────────────
 
 function renderMarkdown(text) {
   const elements = [];
@@ -436,7 +809,65 @@ function renderMarkdown(text) {
   return elements;
 }
 
-function AnalysisScreen({ data }) {
+// ─── ANALYSIS SCREEN ─────────────────────────────────────────────────────────
+
+function ScenarioToggle({ data, set, onRegenerate }) {
+  const scenarios = [
+    { key: "base", label: "Base" },
+    { key: "conservative", label: "Conservative" },
+    { key: "aggressive", label: "Aggressive" },
+  ];
+  const assumptions = getActiveAssumptions(data);
+
+  return (
+    <div style={{
+      background: "#f4f7f5", border: "1px solid #e2eae6", borderRadius: 12,
+      padding: "14px 16px", marginBottom: 20,
+    }}>
+      <div style={{ fontSize: 11, color: "#8a9e98", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 10 }}>
+        Planning scenario
+      </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+        {scenarios.map(s => (
+          <button
+            key={s.key}
+            onClick={() => { set("activeScenario", s.key); onRegenerate(); }}
+            style={{
+              flex: 1, padding: "8px 0", border: "1.5px solid",
+              borderColor: data.activeScenario === s.key ? "#3d6b5e" : "#d4ddd9",
+              borderRadius: 8, fontSize: 13, fontWeight: data.activeScenario === s.key ? 600 : 400,
+              color: data.activeScenario === s.key ? "#3d6b5e" : "#6b7a74",
+              background: data.activeScenario === s.key ? "#eaf2ef" : "white",
+              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+            }}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        {[
+          { label: "Return", value: assumptions.returnRate + "% p.a." },
+          { label: "Inflation", value: assumptions.inflation + "% p.a." },
+          { label: "Property", value: assumptions.propertyGrowth + "% p.a." },
+          { label: "Withdrawal", value: assumptions.safeWithdrawal + "%" },
+        ].map((item, i) => (
+          <div key={i}>
+            <div style={{ fontSize: 10, color: "#a0aba6", textTransform: "uppercase", letterSpacing: "0.06em" }}>{item.label}</div>
+            <div style={{ fontSize: 13, fontWeight: 500, color: "#2d3a35" }}>{item.value}</div>
+          </div>
+        ))}
+        {data.useCustomAssumptions && (
+          <div style={{ marginLeft: "auto", fontSize: 11, color: "#b8913a", background: "#f5eddb", padding: "3px 8px", borderRadius: 20, alignSelf: "center" }}>
+            Custom assumptions
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AnalysisScreen({ data, set }) {
   const [status, setStatus] = useState("idle");
   const [response, setResponse] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -445,7 +876,6 @@ function AnalysisScreen({ data }) {
   async function generate() {
     setStatus("loading");
     setResponse("");
-
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
@@ -453,11 +883,10 @@ function AnalysisScreen({ data }) {
         body: JSON.stringify({
           model: "claude-sonnet-4-6",
           max_tokens: 2500,
-          system: "You are Clearpath, a warm, intelligent Australian financial planning assistant. You provide clear, practical, Australia-specific financial guidance. Never present outputs as personal financial advice. Use plain English. Reference Australian concepts naturally: super, HECS, franking credits, offset accounts, negative gearing, Medicare levy, CGT discount, SG rate, concessional caps, preservation age. Write each section completely before moving to the next. Never repeat or restart a section.",
+          system: "You are Clearpath, a warm, intelligent Australian financial planning assistant. You provide clear, practical, Australia-specific financial guidance. Never present outputs as personal financial advice. Use plain English. Reference Australian concepts naturally: super, HECS, franking credits, offset accounts, negative gearing, Medicare levy, CGT discount, SG rate, concessional caps, preservation age. Write each section completely before moving to the next. Never repeat or restart a section. Always acknowledge the active planning scenario in your analysis.",
           messages: [{ role: "user", content: buildPrompt(data) }],
         }),
       });
-
       const result = await res.json();
       if (result.error) throw new Error(result.error.message || "API error");
       const text = result.content?.[0]?.text || "";
@@ -474,8 +903,14 @@ function AnalysisScreen({ data }) {
     setTimeout(generate, 0);
   }
 
+  function handleScenarioChange(field, value) {
+    set(field, value);
+  }
+
   return (
     <div>
+      <ScenarioToggle data={data} set={handleScenarioChange} onRegenerate={generate} />
+
       {status === "loading" && (
         <div style={{ textAlign: "center", padding: "48px 0" }}>
           <div style={{
@@ -501,7 +936,7 @@ function AnalysisScreen({ data }) {
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: "#3d6b5e", marginBottom: 1 }}>Clearpath Analysis</div>
               <div style={{ fontSize: 11, color: "#8a9e98" }}>
-                {data.firstName ? ("Personalised for " + data.firstName) : "Your financial picture"} · General information only
+                {data.firstName ? ("Personalised for " + data.firstName) : "Your financial picture"} · {({ base: "Base", conservative: "Conservative", aggressive: "Aggressive" })[data.activeScenario]} scenario · General information only
               </div>
             </div>
           </div>
@@ -533,6 +968,8 @@ function AnalysisScreen({ data }) {
   );
 }
 
+// ─── MAIN APP ─────────────────────────────────────────────────────────────────
+
 export default function ClearpathMVP() {
   const [data, setData] = useState(() => loadData());
   const [stage, setStage] = useState(1);
@@ -551,10 +988,10 @@ export default function ClearpathMVP() {
     setTimeout(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, 50);
   }
 
-  function next() { goTo(Math.min(stage + 1, 6)); }
+  function next() { goTo(Math.min(stage + 1, 7)); }
   function back() { goTo(Math.max(stage - 1, 1)); }
 
-  const progress = ((stage - 1) / 5) * 100;
+  const progress = ((stage - 1) / 6) * 100;
   const currentStage = STAGES[stage - 1];
 
   const totalAssets = [data.cashSavings, data.offsetBalance, data.sharesEtfs, data.managedFunds,
@@ -588,12 +1025,17 @@ export default function ClearpathMVP() {
       </header>
 
       <div style={{ background: "white", borderBottom: "1px solid #e2eae6", padding: "0 28px 14px" }}>
-        <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+        <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
           {STAGES.map(s => (
             <button key={s.id} onClick={() => s.id < stage ? goTo(s.id) : null}
-              style={{ flex: 1, padding: "6px 0", border: "none", background: s.id === stage ? "#3d6b5e" : s.id < stage ? "#c4ddd6" : "#e8f0ee", borderRadius: 6, cursor: s.id < stage ? "pointer" : "default", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, transition: "all 0.2s" }}>
-              <div style={{ fontSize: 13 }}>{s.icon}</div>
-              <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: "0.05em", color: s.id === stage ? "white" : s.id < stage ? "#2d6558" : "#8ab5aa", textTransform: "uppercase" }}>{s.label}</div>
+              style={{
+                flex: 1, padding: "6px 0", border: "none",
+                background: s.id === stage ? "#3d6b5e" : s.id < stage ? "#c4ddd6" : "#e8f0ee",
+                borderRadius: 6, cursor: s.id < stage ? "pointer" : "default",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 2, transition: "all 0.2s",
+              }}>
+              <div style={{ fontSize: 12 }}>{s.icon}</div>
+              <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.04em", color: s.id === stage ? "white" : s.id < stage ? "#2d6558" : "#8ab5aa", textTransform: "uppercase" }}>{s.label}</div>
             </button>
           ))}
         </div>
@@ -609,6 +1051,7 @@ export default function ClearpathMVP() {
             { label: "Super", value: currency(data.superBalance) },
             { label: "Monthly Savings", value: currency(data.savingsPerMonth) },
             { label: "Emergency Runway", value: runway === "—" ? "—" : (runway + " mo") },
+            { label: "Scenario", value: { base: "Base", conservative: "Conservative", aggressive: "Aggressive" }[data.activeScenario] || "Base" },
           ].map((item, i) => (
             <div key={i} style={{ flexShrink: 0 }}>
               <div style={{ fontSize: 9, color: "rgba(255,255,255,0.6)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{item.label}</div>
@@ -621,7 +1064,7 @@ export default function ClearpathMVP() {
       <div style={{ flex: 1, display: "flex", justifyContent: "center", padding: "32px 20px 100px" }}>
         <div style={{ width: "100%", maxWidth: 620 }}>
           <div style={{ marginBottom: 28, animation: "fadeIn 0.3s ease" }}>
-            <div style={{ fontSize: 11, color: "#8a9e98", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Step {stage} of 6</div>
+            <div style={{ fontSize: 11, color: "#8a9e98", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Step {stage} of 7</div>
             <div style={{ fontFamily: "Instrument Serif, serif", fontSize: 28, color: "#0f1a16", marginBottom: 4 }}>{currentStage.title}</div>
             <div style={{ fontSize: 14, color: "#6b8f84" }}>{currentStage.subtitle}</div>
           </div>
@@ -632,21 +1075,22 @@ export default function ClearpathMVP() {
             {stage === 3 && <Stage3 data={data} set={set} />}
             {stage === 4 && <Stage4 data={data} set={set} />}
             {stage === 5 && <Stage5 data={data} set={set} />}
-            {stage === 6 && <AnalysisScreen data={data} />}
+            {stage === 6 && <Stage6 data={data} set={set} />}
+            {stage === 7 && <AnalysisScreen data={data} set={set} />}
           </div>
 
-          {stage < 6 && (
+          {stage < 7 && (
             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
               {stage > 1 ? (
                 <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #d4ddd9", borderRadius: 12, background: "white", fontSize: 14, color: "#4a6660", cursor: "pointer", fontFamily: "inherit" }}>← Back</button>
               ) : <div />}
               <button onClick={next} style={{ padding: "12px 28px", border: "none", borderRadius: 12, background: "#3d6b5e", color: "white", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 12px rgba(61,107,94,0.3)" }}>
-                {stage === 5 ? "Generate My Plan →" : "Continue →"}
+                {stage === 6 ? "Generate My Plan →" : "Continue →"}
               </button>
             </div>
           )}
 
-          {stage === 6 && (
+          {stage === 7 && (
             <div style={{ marginTop: 20 }}>
               <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #d4ddd9", borderRadius: 12, background: "white", fontSize: 14, color: "#4a6660", cursor: "pointer", fontFamily: "inherit" }}>← Edit my details</button>
             </div>
