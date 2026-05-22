@@ -36,6 +36,19 @@ const STAGES = [
   { id: 7, label: "Analysis", icon: "✦",  title: "Your Financial Picture",  subtitle: "AI-powered insights" },
 ];
 
+const BUDGET_CATS = [
+  { key: "housing",       label: "Housing",                icon: "🏠", hint: "Mortgage repayments, rent, body corp fees" },
+  { key: "utilities",     label: "Utilities & bills",      icon: "⚡", hint: "Electricity, gas, water, internet, mobile" },
+  { key: "groceries",     label: "Groceries & household",  icon: "🛒", hint: "Food and household supplies" },
+  { key: "transport",     label: "Transport",              icon: "🚗", hint: "Fuel, car insurance, rego, public transport" },
+  { key: "insurance",     label: "Insurance",              icon: "🛡️", hint: "Private health, life, income protection (outside super)" },
+  { key: "health",        label: "Health & medical",       icon: "🏥", hint: "Doctors, dentist, pharmacy, specialists" },
+  { key: "entertainment", label: "Entertainment & dining", icon: "🍽️", hint: "Dining out, streaming, subscriptions, events" },
+  { key: "children",      label: "Children & education",   icon: "🎓", hint: "Childcare, school fees, tutoring, activities" },
+  { key: "personal",      label: "Personal & clothing",    icon: "👕", hint: "Clothing, haircuts, gym, beauty" },
+  { key: "other",         label: "Other",                  icon: "📦", hint: "Anything else not covered above" },
+];
+
 const EMPTY_DATA = {
   // Stage 1
   firstName: "", age: "", partnerAge: "", partnerRetirementAge: "", hasPartner: "no",
@@ -44,6 +57,8 @@ const EMPTY_DATA = {
   // Stage 2
   grossIncome: "", partnerIncome: "", bonusIncome: "", otherIncome: "",
   monthlyExpenses: "", annualIrregular: "", savingsPerMonth: "",
+  budget: { housing: "", utilities: "", groceries: "", transport: "", insurance: "",
+            health: "", entertainment: "", children: "", personal: "", other: "" },
   // Stage 3
   cashSavings: "", offsetBalance: "", sharesEtfs: "", managedFunds: "",
   crypto: "", otherInvestments: "", emergencyFund: "",
@@ -98,6 +113,7 @@ function loadData() {
       ...EMPTY_DATA,
       ...parsed,
       investmentProperties,
+      budget: { ...EMPTY_DATA.budget, ...(parsed.budget || {}) },
       customAssumptions: {
         base: { ...DEFAULT_SCENARIOS.base, ...(parsed.customAssumptions?.base || {}) },
         conservative: { ...DEFAULT_SCENARIOS.conservative, ...(parsed.customAssumptions?.conservative || {}) },
@@ -122,6 +138,40 @@ function newProperty(label) {
 
 function saveData(data) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
+}
+
+// ─── TAX ESTIMATE (FY2025-26 marginal rates + LITO, individual basis) ─────────
+function annualTax(grossIncome) {
+  const g = Math.max(0, parseFloat(String(grossIncome).replace(/,/g, "")) || 0);
+  if (!g) return 0;
+  let tax = 0;
+  if (g > 18200) tax += (Math.min(g, 45000)  - 18200)  * 0.19;
+  if (g > 45000) tax += (Math.min(g, 120000) - 45000)  * 0.325;
+  if (g > 120000) tax += (Math.min(g, 180000) - 120000) * 0.37;
+  if (g > 180000) tax += (g - 180000) * 0.45;
+  if (g > 23365)  tax += g * 0.02; // Medicare levy
+  // Low Income Tax Offset (simplified)
+  if (g <= 37500)      tax -= 700;
+  else if (g <= 45000) tax -= (700 - (g - 37500) * 0.05);
+  else if (g <= 66667) tax -= Math.max(0, 325 - (g - 45000) * 0.015);
+  return Math.max(0, Math.round(tax));
+}
+
+function estimateNetMonthly(data) {
+  const n = v => parseFloat(String(v || "").replace(/,/g, "")) || 0;
+  // Salary sacrifice reduces person 1's taxable income
+  const g1 = Math.max(0, n(data.grossIncome) - n(data.salarySacrifice));
+  const g2 = data.hasPartner === "yes" ? n(data.partnerIncome) : 0;
+  const net1 = g1 - annualTax(g1);
+  const net2 = g2 - annualTax(g2);
+  const bonus = (n(data.bonusIncome) + n(data.otherIncome)) * 0.75; // ~25% avg tax
+  return Math.max(0, Math.round((net1 + net2 + bonus) / 12));
+}
+
+function budgetTotal(budget) {
+  return BUDGET_CATS.reduce((sum, cat) =>
+    sum + (parseFloat(String(budget?.[cat.key] || "").replace(/,/g, "")) || 0), 0
+  );
 }
 
 function buildPrompt(data, engine) {
@@ -186,8 +236,18 @@ Goals: ${goals}
 INCOME & CASHFLOW
 Gross income: ${currency(data.grossIncome)}${couple ? ` | Partner income: ${currency(data.partnerIncome)}` : ""}
 Bonus/other income: ${currency(data.bonusIncome)} | Other: ${currency(data.otherIncome)}
-Monthly expenses: ${currency(data.monthlyExpenses)} | Annual irregular: ${currency(data.annualIrregular)}
-Monthly savings: ${currency(data.savingsPerMonth)}
+${(() => {
+  const bt = budgetTotal(data.budget);
+  if (bt > 0) {
+    const lines = BUDGET_CATS
+      .filter(c => parseFloat(String(data.budget?.[c.key] || "").replace(/,/g, "")) > 0)
+      .map(c => `  ${c.label}: ${currency(data.budget[c.key])}/month`)
+      .join("\n");
+    return `Monthly budget breakdown:\n${lines}\n  Total: ${currency(bt)}/month`;
+  }
+  return `Monthly expenses: ${currency(data.monthlyExpenses)}`;
+})()}
+Annual irregular: ${currency(data.annualIrregular)} | Monthly savings: ${currency(data.savingsPerMonth)}
 
 ASSETS & SAVINGS
 Cash savings: ${currency(data.cashSavings)} | Offset: ${currency(data.offsetBalance)}
@@ -395,39 +455,134 @@ function Stage1({ data, set }) {
   );
 }
 
-function Stage2({ data, set }) {
+function CashflowSummary({ netMonthly, expenses, savings, surplus }) {
+  const isPos = surplus >= 0;
+  const color  = isPos ? "#3d6b5e" : "#9a3922";
+  const bg     = isPos ? "#eaf2ef" : "#fdf4f0";
+  const bdr    = isPos ? "#c4ddd6" : "#f0d0c4";
+  return (
+    <div style={{ background: bg, border: `1.5px solid ${bdr}`, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8a9e98", marginBottom: 10 }}>
+        Monthly Cashflow
+      </div>
+      {[
+        { label: "Est. take-home income", val: netMonthly, sign: "+" },
+        { label: "Monthly budget",        val: expenses,   sign: "−" },
+        { label: "Planned savings",       val: savings,    sign: "−" },
+      ].map(({ label, val, sign }, i) => (
+        <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+          <span style={{ fontSize: 12, color: "#6b8f84" }}>{label}</span>
+          <span style={{ fontSize: 12, fontWeight: 500, color: sign === "+" ? "#3d6b5e" : "#4a6660" }}>
+            {sign} {currency(val)}
+          </span>
+        </div>
+      ))}
+      <div style={{ borderTop: `1px solid ${bdr}`, marginTop: 8, paddingTop: 8, display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: "#2d3a35" }}>
+          {isPos ? "Monthly surplus" : "Monthly shortfall"}
+        </span>
+        <span style={{ fontFamily: "Instrument Serif, serif", fontSize: 22, color }}>
+          {isPos ? "" : "−"}{currency(Math.abs(surplus))}
+        </span>
+      </div>
+      <div style={{ fontSize: 10, color: "#b0bab6", marginTop: 6 }}>
+        ★ Income estimate based on FY2025-26 marginal rates. Salary sacrifice deducted where entered.
+      </div>
+    </div>
+  );
+}
+
+function Stage2({ data, setMany }) {
+  const budget  = data.budget || {};
+  const n = v => parseFloat(String(v || "").replace(/,/g, "")) || 0;
+  const bTotal  = budgetTotal(budget);
+  const hasBudget = bTotal > 0;
+
+  function setBudgetCat(key, value) {
+    const newBudget = { ...budget, [key]: value };
+    const total = budgetTotal(newBudget);
+    setMany({ budget: newBudget, monthlyExpenses: total > 0 ? String(Math.round(total)) : data.monthlyExpenses });
+  }
+
+  const netMonthly = estimateNetMonthly(data);
+  const expenses   = hasBudget ? bTotal : n(data.monthlyExpenses);
+  const savings    = n(data.savingsPerMonth);
+  const surplus    = netMonthly - expenses - savings;
+
   return (
     <div>
       <TwoCol>
         <Field label="Your gross annual income" hint="Before tax">
-          <Input value={data.grossIncome} onChange={v => set("grossIncome", v)} placeholder="95,000" prefix="$" />
+          <Input value={data.grossIncome} onChange={v => setMany({ grossIncome: v })} placeholder="95,000" prefix="$" />
         </Field>
         {data.hasPartner === "yes" ? (
           <Field label="Partner's gross income" hint="Before tax">
-            <Input value={data.partnerIncome} onChange={v => set("partnerIncome", v)} placeholder="80,000" prefix="$" />
+            <Input value={data.partnerIncome} onChange={v => setMany({ partnerIncome: v })} placeholder="80,000" prefix="$" />
           </Field>
         ) : <div />}
       </TwoCol>
       <TwoCol>
         <Field label="Annual bonus / incentives" hint="Leave blank if none">
-          <Input value={data.bonusIncome} onChange={v => set("bonusIncome", v)} placeholder="0" prefix="$" />
+          <Input value={data.bonusIncome} onChange={v => setMany({ bonusIncome: v })} placeholder="0" prefix="$" />
         </Field>
         <Field label="Other income" hint="Rental, side income, dividends">
-          <Input value={data.otherIncome} onChange={v => set("otherIncome", v)} placeholder="0" prefix="$" />
+          <Input value={data.otherIncome} onChange={v => setMany({ otherIncome: v })} placeholder="0" prefix="$" />
         </Field>
       </TwoCol>
-      <SectionDivider label="Spending" />
+
+      <SectionDivider label="Monthly Budget" />
+
+      <div style={{ background: "#f9faf9", border: "1.5px solid #e2eae6", borderRadius: 12, overflow: "hidden", marginBottom: 14 }}>
+        {BUDGET_CATS.map((cat, i) => {
+          const val = n(budget[cat.key]);
+          const pct = bTotal > 0 && val > 0 ? Math.min(100, (val / bTotal) * 100) : 0;
+          return (
+            <div key={cat.key} style={{
+              display: "flex", alignItems: "center", gap: 12,
+              padding: "10px 14px",
+              borderBottom: i < BUDGET_CATS.length - 1 ? "1px solid #eaeeed" : "none",
+              background: val > 0 ? "white" : "transparent",
+            }}>
+              <span style={{ fontSize: 15, width: 22, textAlign: "center", flexShrink: 0 }}>{cat.icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "#2d3a35" }}>{cat.label}</div>
+                <div style={{ fontSize: 10, color: "#b0bab6" }}>{cat.hint}</div>
+              </div>
+              {pct > 0 && (
+                <div style={{ width: 52, flexShrink: 0 }}>
+                  <div style={{ height: 3, background: "#e2eae6", borderRadius: 2 }}>
+                    <div style={{ height: "100%", width: `${pct}%`, background: "#3d6b5e", borderRadius: 2 }} />
+                  </div>
+                  <div style={{ fontSize: 9, color: "#b0bab6", textAlign: "right", marginTop: 2 }}>{Math.round(pct)}%</div>
+                </div>
+              )}
+              <div style={{ width: 110, flexShrink: 0 }}>
+                <Input value={budget[cat.key] || ""} onChange={v => setBudgetCat(cat.key, v)} placeholder="0" prefix="$" />
+              </div>
+            </div>
+          );
+        })}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "11px 14px", background: "#eaf2ef", borderTop: "1.5px solid #c4ddd6" }}>
+          <span style={{ fontSize: 11, fontWeight: 600, color: "#3d6b5e", textTransform: "uppercase", letterSpacing: "0.06em" }}>Monthly total</span>
+          <span style={{ fontFamily: "Instrument Serif, serif", fontSize: 22, color: "#0f1a16" }}>
+            {bTotal > 0 ? currency(bTotal) : <span style={{ color: "#c0c8c4", fontSize: 16 }}>Fill in categories above</span>}
+          </span>
+        </div>
+      </div>
+
+      {netMonthly > 0 && (hasBudget || expenses > 0) && (
+        <CashflowSummary netMonthly={netMonthly} expenses={expenses} savings={savings} surplus={surplus} />
+      )}
+
+      <SectionDivider label="Other spending" />
       <TwoCol>
-        <Field label="Monthly household expenses" hint="All regular living costs">
-          <Input value={data.monthlyExpenses} onChange={v => set("monthlyExpenses", v)} placeholder="4,500" prefix="$" />
+        <Field label="Annual irregular expenses" hint="Holidays, car rego, rates, gifts">
+          <Input value={data.annualIrregular} onChange={v => setMany({ annualIrregular: v })} placeholder="5,000" prefix="$" />
         </Field>
-        <Field label="Annual irregular expenses" hint="Holidays, car rego, rates etc.">
-          <Input value={data.annualIrregular} onChange={v => set("annualIrregular", v)} placeholder="5,000" prefix="$" />
+        <Field label="Monthly savings target" hint="Net amount you put aside each month">
+          <Input value={data.savingsPerMonth} onChange={v => setMany({ savingsPerMonth: v })} placeholder="1,200" prefix="$" />
         </Field>
       </TwoCol>
-      <Field label="How much are you saving per month?" hint="Net savings after all expenses">
-        <Input value={data.savingsPerMonth} onChange={v => set("savingsPerMonth", v)} placeholder="1,200" prefix="$" />
-      </Field>
     </div>
   );
 }
@@ -1549,6 +1704,14 @@ export default function ClearpathMVP() {
     });
   }
 
+  function setMany(updates) {
+    setData(prev => {
+      const next = { ...prev, ...updates };
+      saveData(next);
+      return next;
+    });
+  }
+
   function goTo(s) {
     setStage(s);
     setTimeout(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, 50);
@@ -1640,7 +1803,7 @@ export default function ClearpathMVP() {
 
           <div ref={scrollRef} style={{ background: "white", borderRadius: 18, border: "1px solid #e2eae6", padding: "28px", animation: "fadeIn 0.25s ease", boxShadow: "0 2px 16px rgba(0,0,0,0.04)" }}>
             {stage === 1 && <Stage1 data={data} set={set} />}
-            {stage === 2 && <Stage2 data={data} set={set} />}
+            {stage === 2 && <Stage2 data={data} setMany={setMany} />}
             {stage === 3 && <Stage3 data={data} set={set} />}
             {stage === 4 && <Stage4 data={data} set={set} />}
             {stage === 5 && <Stage5 data={data} set={set} />}
