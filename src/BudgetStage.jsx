@@ -114,7 +114,9 @@ export function estimateNetMonthly(data) {
 
 export function itemMonthly(item) {
   const amount = parseFloat(String(item?.amount || "").replace(/,/g, "")) || 0;
-  return item?.frequency === "annual" ? amount / 12 : amount;
+  if (item?.frequency === "annual")    return amount / 12;
+  if (item?.frequency === "quarterly") return amount / 3;
+  return amount;
 }
 
 export function budgetTotal(items) {
@@ -124,22 +126,30 @@ export function budgetTotal(items) {
 // ─── CASHFLOW CALENDAR LOGIC ──────────────────────────────────────────────────
 
 // Builds 12 monthly rows from budget items + income.
-// Annual items WITH a month set appear as a one-off spike in that month.
-// Annual items WITHOUT a month are smoothed into fixedMonthly (÷12).
+// Annual items WITH a month → spike in that exact month.
+// Quarterly items WITH a month → spike in months M, M+3, M+6, M+9.
+// Annual/quarterly WITHOUT a month → smoothed into fixedMonthly (÷12 or ÷3).
 export function buildCashflowCalendar(items, netMonthlyIncome, startingCash = 0) {
   const p = v => parseFloat(String(v || "").replace(/,/g, "")) || 0;
-  const monthlyItems    = (items || []).filter(i => i.frequency === "monthly");
-  const annualWithMonth = (items || []).filter(i => i.frequency === "annual" && i.month);
-  const annualNoMonth   = (items || []).filter(i => i.frequency === "annual" && !i.month);
+  const all = items || [];
+  const monthlyItems      = all.filter(i => i.frequency === "monthly");
+  const annualWithMonth   = all.filter(i => i.frequency === "annual"    && i.month);
+  const annualNoMonth     = all.filter(i => i.frequency === "annual"    && !i.month);
+  const quarterlyWithMonth= all.filter(i => i.frequency === "quarterly" && i.month);
+  const quarterlyNoMonth  = all.filter(i => i.frequency === "quarterly" && !i.month);
 
   const fixedMonthly =
     monthlyItems.reduce((s, i) => s + p(i.amount), 0) +
-    annualNoMonth.reduce((s, i) => s + p(i.amount) / 12, 0);
+    annualNoMonth.reduce((s, i) => s + p(i.amount) / 12, 0) +
+    quarterlyNoMonth.reduce((s, i) => s + p(i.amount) / 3, 0);
 
   let cumulative = startingCash;
   return MONTH_NAMES.map((name, idx) => {
     const monthNum = idx + 1;
-    const spikes   = annualWithMonth.filter(i => parseInt(i.month) === monthNum);
+    const annSpikes = annualWithMonth.filter(i => parseInt(i.month) === monthNum);
+    // Quarterly: hits if (monthNum - startMonth) mod 3 === 0
+    const qtrSpikes = quarterlyWithMonth.filter(i => ((monthNum - parseInt(i.month) + 12) % 3) === 0);
+    const spikes    = [...annSpikes, ...qtrSpikes];
     const annualDue = spikes.reduce((s, i) => s + p(i.amount), 0);
     const net = netMonthlyIncome - fixedMonthly - annualDue;
     cumulative += net;
@@ -196,13 +206,13 @@ function CashflowSummary({ netMonthly, expenses, savings, surplus }) {
 // ─── CASHFLOW CALENDAR COMPONENT ─────────────────────────────────────────────
 
 export function CashflowCalendar({ items, netMonthly, startingCash = 0, compact = false }) {
-  const rows     = buildCashflowCalendar(items || [], netMonthly, startingCash);
-  const hasSpikes = (items || []).some(i => i.frequency === "annual" && i.month);
-  const hasAnnual = (items || []).some(i => i.frequency === "annual");
+  const rows      = buildCashflowCalendar(items || [], netMonthly, startingCash);
+  const hasSpikes = (items || []).some(i => (i.frequency === "annual" || i.frequency === "quarterly") && i.month);
+  const hasNonMonthly = (items || []).some(i => i.frequency === "annual" || i.frequency === "quarterly");
 
   // ── COMPACT: 12-chip row shown in Stage 2 ──────────────────────────────────
   if (compact) {
-    if (!hasAnnual) return null;
+    if (!hasNonMonthly) return null;
     if (!hasSpikes) {
       return (
         <div style={{
@@ -214,7 +224,7 @@ export function CashflowCalendar({ items, netMonthly, startingCash = 0, compact 
           <div>
             <div style={{ fontSize: 12, fontWeight: 500, color: "#2d3a35", marginBottom: 2 }}>Unlock cashflow calendar</div>
             <div style={{ fontSize: 11, color: "#8a9e98" }}>
-              Tap <strong style={{ color: "#3d6b5e" }}>Yr</strong> on any annual expense, then pick which month it falls due — instantly see which months are tight.
+              Set <strong style={{ color: "#3d6b5e" }}>Yr</strong> or <strong style={{ color: "#3d6b5e" }}>Qtr</strong> on any expense and pick a month — see exactly which months run tight.
             </div>
           </div>
         </div>
@@ -268,9 +278,9 @@ export function CashflowCalendar({ items, netMonthly, startingCash = 0, compact 
         )}
       </div>
 
-      {!hasAnnual ? (
+      {!hasNonMonthly ? (
         <div style={{ padding: "20px 16px", fontSize: 12, color: "#8a9e98", textAlign: "center" }}>
-          Add annual expenses in Stage 2 and assign a month to each to see the calendar.
+          Add annual or quarterly expenses in Stage 2 and assign a start month to see the calendar.
         </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
@@ -358,9 +368,15 @@ export function CashflowCalendar({ items, netMonthly, startingCash = 0, compact 
 
 // ─── BUDGET ITEM ROW ─────────────────────────────────────────────────────────
 
+// Frequency cycle order for BudgetItem toggle
+const FREQ_CYCLE = { monthly: "quarterly", quarterly: "annual", annual: "monthly" };
+const FREQ_LABEL = { monthly: "Mo", quarterly: "Qtr", annual: "Yr" };
+
 function BudgetItem({ item, onUpdate, onRemove }) {
-  const monthly  = itemMonthly(item);
-  const isAnnual = item.frequency === "annual";
+  const monthly    = itemMonthly(item);
+  const freq       = item.frequency || "monthly";
+  const isNonMonthly = freq !== "monthly";
+  const nextFreq   = FREQ_CYCLE[freq] || "monthly";
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: 8,
@@ -370,7 +386,7 @@ function BudgetItem({ item, onUpdate, onRemove }) {
       <div style={{ flex: 1, fontSize: 13, color: "#2d3a35", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {item.label}
       </div>
-      {isAnnual && monthly > 0 && (
+      {isNonMonthly && monthly > 0 && (
         <div style={{ fontSize: 10, color: "#b0bab6", whiteSpace: "nowrap", flexShrink: 0 }}>
           {currency(monthly)}/mo
         </div>
@@ -378,28 +394,25 @@ function BudgetItem({ item, onUpdate, onRemove }) {
       <div style={{ width: 100, flexShrink: 0 }}>
         <Input value={item.amount} onChange={v => onUpdate(item.id, { amount: v })} placeholder="0" prefix="$" />
       </div>
-      {/* Mo / Yr toggle */}
+      {/* Mo / Qtr / Yr cycle button */}
       <button
-        onClick={() => isAnnual
-          ? onUpdate(item.id, { frequency: "monthly", month: null })
-          : onUpdate(item.id, { frequency: "annual" })
-        }
-        title={isAnnual ? "Switch to monthly" : "Switch to annual"}
+        onClick={() => onUpdate(item.id, { frequency: nextFreq, month: nextFreq === "monthly" ? null : item.month })}
+        title={`Frequency: ${freq} — click to cycle Mo → Qtr → Yr`}
         style={{
-          flexShrink: 0, padding: "4px 9px", border: "1.5px solid",
-          borderColor: isAnnual ? "#3d6b5e" : "#d4ddd9", borderRadius: 6,
+          flexShrink: 0, padding: "4px 8px", border: "1.5px solid",
+          borderColor: isNonMonthly ? "#3d6b5e" : "#d4ddd9", borderRadius: 6,
           fontSize: 11, fontWeight: 600,
-          color: isAnnual ? "#3d6b5e" : "#a0aba6",
-          background: isAnnual ? "#eaf2ef" : "#f9faf9",
+          color: isNonMonthly ? "#3d6b5e" : "#a0aba6",
+          background: isNonMonthly ? "#eaf2ef" : "#f9faf9",
           cursor: "pointer", fontFamily: "inherit",
         }}
-      >{isAnnual ? "Yr" : "Mo"}</button>
-      {/* Month picker — only for annual items */}
-      {isAnnual && (
+      >{FREQ_LABEL[freq]}</button>
+      {/* Month picker — for annual (exact month due) or quarterly (start month) */}
+      {isNonMonthly && (
         <select
           value={item.month || ""}
           onChange={e => onUpdate(item.id, { month: e.target.value ? parseInt(e.target.value) : null })}
-          title="Which month does this fall due?"
+          title={freq === "quarterly" ? "Which month does the first payment fall?" : "Which month does this fall due?"}
           style={{
             flexShrink: 0, padding: "4px 5px", width: 52,
             border: `1.5px solid ${item.month ? "#3d6b5e" : "#d4ddd9"}`,
@@ -489,7 +502,7 @@ function AddItemPicker({ categoryKey, catLabel, onAdd, onCancel }) {
   function commit() {
     if (queue.length === 0) return;
     onAdd(queue.map(({ label, amount, frequency, month }) => ({
-      label, amount, frequency, month: frequency === "annual" ? month : null,
+      label, amount, frequency, month: frequency !== "monthly" ? month : null,
     })));
   }
 
@@ -593,19 +606,19 @@ function AddItemPicker({ categoryKey, catLabel, onAdd, onCancel }) {
                 onBlur={e => e.target.style.borderColor = "#d4ddd9"}
               />
             </div>
-            {/* Mo / Yr */}
-            {["monthly", "annual"].map(val => (
+            {/* Mo / Qtr / Yr */}
+            {[{ val: "monthly", short: "Mo" }, { val: "quarterly", short: "Qtr" }, { val: "annual", short: "Yr" }].map(({ val, short }) => (
               <button key={val} onClick={() => updateQueueItem(item.id, { frequency: val, month: val === "monthly" ? null : item.month })} style={{
-                padding: "9px 10px", border: "1.5px solid",
+                padding: "9px 8px", border: "1.5px solid",
                 borderColor: item.frequency === val ? "#3d6b5e" : "#d4ddd9",
                 borderRadius: 8, fontSize: 12, fontWeight: item.frequency === val ? 600 : 400,
                 color: item.frequency === val ? "#3d6b5e" : "#a0aba6",
                 background: item.frequency === val ? "#eaf2ef" : "white",
                 cursor: "pointer", fontFamily: "inherit", flexShrink: 0,
-              }}>{val === "monthly" ? "Mo" : "Yr"}</button>
+              }}>{short}</button>
             ))}
-            {/* Month select — compact dropdown, only when annual */}
-            {item.frequency === "annual" && (
+            {/* Month select — for annual (exact month) or quarterly (start month, repeats ×4) */}
+            {item.frequency !== "monthly" && (
               <select
                 value={item.month || ""}
                 onChange={e => updateQueueItem(item.id, { month: e.target.value ? parseInt(e.target.value) : null })}
@@ -705,8 +718,8 @@ function AddItemPicker({ categoryKey, catLabel, onAdd, onCancel }) {
 // ─── BUDGET CATEGORY ─────────────────────────────────────────────────────────
 
 function BudgetCategory({ cat, items, onAddItems, onUpdateItem, onRemoveItem }) {
-  const catTotal  = items.reduce((s, item) => s + itemMonthly(item), 0);
-  const hasAnnual = items.some(i => i.frequency === "annual");
+  const catTotal      = items.reduce((s, item) => s + itemMonthly(item), 0);
+  const hasNonMonthly = items.some(i => i.frequency === "annual" || i.frequency === "quarterly");
   const [expanded,   setExpanded]   = useState(items.length > 0);
   const [showPicker, setShowPicker] = useState(false);
 
@@ -733,7 +746,7 @@ function BudgetCategory({ cat, items, onAddItems, onUpdateItem, onRemoveItem }) 
             <div style={{ fontSize: 13, fontFamily: "Instrument Serif, serif", color: "#0f1a16" }}>
               {currency(catTotal)}<span style={{ fontSize: 10, color: "#b0bab6", fontFamily: "DM Sans, sans-serif" }}>/mo</span>
             </div>
-            {hasAnnual && (
+            {hasNonMonthly && (
               <div style={{ fontSize: 9, color: "#c0c8c4" }}>{currency(catTotal * 12)}/yr</div>
             )}
           </div>

@@ -234,6 +234,10 @@ ${(() => {
         note = item.month
           ? ` (${currency(p)}/year — due ${MNAMES[item.month - 1]})`
           : ` (${currency(p)}/year — month not set)`;
+      } else if (item.frequency === "quarterly") {
+        note = item.month
+          ? ` (${currency(p)}/quarter — starts ${MNAMES[item.month - 1]}, repeats every 3 months)`
+          : ` (${currency(p)}/quarter — start month not set)`;
       }
       return `  ${item.label}: ${currency(mo)}/month${note}`;
     }).join("\n");
