@@ -6,17 +6,17 @@ import { currency, Field, Input, TwoCol, SectionDivider } from "./ui.jsx";
 // ─── CATEGORIES ──────────────────────────────────────────────────────────────
 
 export const BUDGET_CATS = [
-  { key: "housing",       label: "Housing",                      icon: "🏠" },
-  { key: "utilities",     label: "Utilities & bills",            icon: "⚡" },
-  { key: "groceries",     label: "Groceries & food",             icon: "🛒" },
-  { key: "transport",     label: "Transport",                    icon: "🚗" },
-  { key: "insurance",     label: "Insurance",                    icon: "🛡️" },
-  { key: "health",        label: "Health & medical",             icon: "🏥" },
-  { key: "sport",         label: "Sport & recreation",           icon: "🏆" },
-  { key: "children",      label: "Children & education",         icon: "🎓" },
+  { key: "housing",       label: "Housing",                       icon: "🏠" },
+  { key: "utilities",     label: "Utilities & bills",             icon: "⚡" },
+  { key: "groceries",     label: "Groceries & food",              icon: "🛒" },
+  { key: "transport",     label: "Transport",                     icon: "🚗" },
+  { key: "insurance",     label: "Insurance",                     icon: "🛡️" },
+  { key: "health",        label: "Health & medical",              icon: "🏥" },
+  { key: "sport",         label: "Sport & recreation",            icon: "🏆" },
+  { key: "children",      label: "Children & education",          icon: "🎓" },
   { key: "entertainment", label: "Entertainment & subscriptions", icon: "🎬" },
-  { key: "personal",      label: "Personal & memberships",       icon: "👕" },
-  { key: "other",         label: "Other",                        icon: "📦" },
+  { key: "personal",      label: "Personal & memberships",        icon: "👕" },
+  { key: "other",         label: "Other",                         icon: "📦" },
 ];
 
 const BUDGET_SUGGESTIONS = {
@@ -81,6 +81,10 @@ const BUDGET_SUGGESTIONS = {
   ],
 };
 
+const MONTH_NAMES = ["January","February","March","April","May","June",
+                     "July","August","September","October","November","December"];
+const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 function annualTax(grossIncome) {
@@ -98,7 +102,7 @@ function annualTax(grossIncome) {
   return Math.max(0, Math.round(tax));
 }
 
-function estimateNetMonthly(data) {
+export function estimateNetMonthly(data) {
   const n = v => parseFloat(String(v || "").replace(/,/g, "")) || 0;
   const g1 = Math.max(0, n(data.grossIncome) - n(data.salarySacrifice));
   const g2 = data.hasPartner === "yes" ? n(data.partnerIncome) : 0;
@@ -117,10 +121,36 @@ export function budgetTotal(items) {
   return (items || []).reduce((sum, item) => sum + itemMonthly(item), 0);
 }
 
+// ─── CASHFLOW CALENDAR LOGIC ──────────────────────────────────────────────────
+
+// Builds 12 monthly rows from budget items + income.
+// Annual items WITH a month set appear as a one-off spike in that month.
+// Annual items WITHOUT a month are smoothed into fixedMonthly (÷12).
+export function buildCashflowCalendar(items, netMonthlyIncome, startingCash = 0) {
+  const p = v => parseFloat(String(v || "").replace(/,/g, "")) || 0;
+  const monthlyItems    = (items || []).filter(i => i.frequency === "monthly");
+  const annualWithMonth = (items || []).filter(i => i.frequency === "annual" && i.month);
+  const annualNoMonth   = (items || []).filter(i => i.frequency === "annual" && !i.month);
+
+  const fixedMonthly =
+    monthlyItems.reduce((s, i) => s + p(i.amount), 0) +
+    annualNoMonth.reduce((s, i) => s + p(i.amount) / 12, 0);
+
+  let cumulative = startingCash;
+  return MONTH_NAMES.map((name, idx) => {
+    const monthNum = idx + 1;
+    const spikes   = annualWithMonth.filter(i => parseInt(i.month) === monthNum);
+    const annualDue = spikes.reduce((s, i) => s + p(i.amount), 0);
+    const net = netMonthlyIncome - fixedMonthly - annualDue;
+    cumulative += net;
+    return { name, short: MONTH_SHORT[idx], income: netMonthlyIncome, fixed: fixedMonthly, annual: annualDue, spikes, net, cumulative };
+  });
+}
+
 function newItem(categoryKey, label) {
   return {
     id: `item_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    categoryKey, label, amount: "", frequency: "monthly",
+    categoryKey, label, amount: "", frequency: "monthly", month: null,
   };
 }
 
@@ -163,6 +193,169 @@ function CashflowSummary({ netMonthly, expenses, savings, surplus }) {
   );
 }
 
+// ─── CASHFLOW CALENDAR COMPONENT ─────────────────────────────────────────────
+
+export function CashflowCalendar({ items, netMonthly, startingCash = 0, compact = false }) {
+  const rows     = buildCashflowCalendar(items || [], netMonthly, startingCash);
+  const hasSpikes = (items || []).some(i => i.frequency === "annual" && i.month);
+  const hasAnnual = (items || []).some(i => i.frequency === "annual");
+
+  // ── COMPACT: 12-chip row shown in Stage 2 ──────────────────────────────────
+  if (compact) {
+    if (!hasAnnual) return null;
+    if (!hasSpikes) {
+      return (
+        <div style={{
+          background: "#f9faf9", border: "1.5px dashed #c4ddd6", borderRadius: 10,
+          padding: "12px 16px", marginBottom: 14,
+          display: "flex", alignItems: "center", gap: 12,
+        }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>📅</span>
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 500, color: "#2d3a35", marginBottom: 2 }}>Unlock cashflow calendar</div>
+            <div style={{ fontSize: 11, color: "#8a9e98" }}>
+              Tap <strong style={{ color: "#3d6b5e" }}>Yr</strong> on any annual expense, then pick which month it falls due — instantly see which months are tight.
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div style={{ background: "#f9faf9", border: "1.5px solid #e2eae6", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
+        <div style={{ fontSize: 10, fontWeight: 600, color: "#8a9e98", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+          Month-by-month cashflow preview
+        </div>
+        <div style={{ display: "flex", gap: 3, overflowX: "auto", paddingBottom: 2 }}>
+          {rows.map(row => {
+            const isPos   = row.net >= 0;
+            const isTight = isPos && netMonthly > 0 && row.net < netMonthly * 0.3;
+            return (
+              <div key={row.short} style={{
+                flex: "0 0 48px", padding: "6px 4px", borderRadius: 8, textAlign: "center",
+                background: isPos ? (isTight ? "#fffbf0" : "#eaf2ef") : "#fdf4f0",
+                border: `1px solid ${isPos ? (isTight ? "#e4d8bc" : "#c4ddd6") : "#f0d0c4"}`,
+              }}>
+                <div style={{ fontSize: 9, color: "#8a9e98", marginBottom: 3, fontWeight: 500, letterSpacing: "0.03em" }}>{row.short}</div>
+                <div style={{ fontSize: 10, fontWeight: 700, lineHeight: 1.2, color: isPos ? (isTight ? "#7a6840" : "#3d6b5e") : "#9a3922" }}>
+                  {isPos ? "+" : "−"}{currency(Math.abs(row.net)).replace("$", "")}
+                </div>
+                {row.annual > 0 && (
+                  <div style={{ fontSize: 8, color: "#9a3922", marginTop: 2, lineHeight: 1 }} title={row.spikes.map(s => s.label).join(", ")}>●</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        <div style={{ fontSize: 10, color: "#b0bab6", marginTop: 8 }}>
+          ● = lump-sum due this month · amber = tight (under 30% of normal surplus) · full calendar in Analysis
+        </div>
+      </div>
+    );
+  }
+
+  // ── FULL TABLE: shown in Stage 7 Analysis ─────────────────────────────────
+  const minCash = startingCash > 0 ? Math.min(...rows.map(r => r.cumulative)) : null;
+  const thStyle = { fontSize: 11, fontWeight: 600, color: "#8a9e98", padding: "7px 10px", textAlign: "right", background: "#f4f7f5", borderBottom: "1.5px solid #e2eae6" };
+
+  return (
+    <div style={{ background: "white", border: "1.5px solid #e2eae6", borderRadius: 12, overflow: "hidden", marginBottom: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "12px 16px", borderBottom: "1px solid #e2eae6" }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: "#8a9e98", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+          12-Month Cashflow Calendar
+        </div>
+        {startingCash > 0 && (
+          <div style={{ fontSize: 11, color: "#6b8f84" }}>Starting cash: {currency(startingCash)}</div>
+        )}
+      </div>
+
+      {!hasAnnual ? (
+        <div style={{ padding: "20px 16px", fontSize: 12, color: "#8a9e98", textAlign: "center" }}>
+          Add annual expenses in Stage 2 and assign a month to each to see the calendar.
+        </div>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 460 }}>
+            <thead>
+              <tr>
+                <th style={{ ...thStyle, textAlign: "left", paddingLeft: 16 }}>Month</th>
+                <th style={thStyle}>Income</th>
+                <th style={thStyle}>Fixed</th>
+                <th style={thStyle}>Annual due</th>
+                <th style={thStyle}>Net</th>
+                {startingCash > 0 && <th style={thStyle}>Cash balance</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, idx) => {
+                const isNeg    = row.net < 0;
+                const isTight  = !isNeg && netMonthly > 0 && row.net < netMonthly * 0.3;
+                const rowBg    = isNeg ? "#fdf4f0" : isTight ? "#fffdf5" : idx % 2 === 0 ? "white" : "#fafcfa";
+                const isLowest = minCash !== null && row.cumulative === minCash;
+                const tdBase   = { padding: "8px 10px", borderBottom: "1px solid #f0f4f2", fontSize: 12 };
+                return (
+                  <tr key={row.name} style={{ background: rowBg }}>
+                    <td style={{ ...tdBase, paddingLeft: 16, color: "#2d3a35", fontWeight: isNeg || isTight ? 600 : 400 }}>
+                      {row.name}
+                    </td>
+                    <td style={{ ...tdBase, textAlign: "right", color: "#3d6b5e" }}>
+                      {currency(row.income)}
+                    </td>
+                    <td style={{ ...tdBase, textAlign: "right", color: "#6b7a74" }}>
+                      ({currency(row.fixed)})
+                    </td>
+                    <td style={{ ...tdBase, textAlign: "right" }}>
+                      {row.annual > 0 ? (
+                        <div>
+                          <div style={{ color: "#9a3922", fontWeight: 600 }}>({currency(row.annual)})</div>
+                          <div style={{ fontSize: 10, color: "#a08060", marginTop: 1 }}>
+                            {row.spikes.map(s => s.label).join(", ")}
+                          </div>
+                        </div>
+                      ) : (
+                        <span style={{ color: "#d0d8d4" }}>—</span>
+                      )}
+                    </td>
+                    <td style={{ ...tdBase, textAlign: "right", fontWeight: 600, color: isNeg ? "#9a3922" : isTight ? "#7a6840" : "#3d6b5e" }}>
+                      {isNeg ? "−" : "+"}{currency(Math.abs(row.net))}
+                    </td>
+                    {startingCash > 0 && (
+                      <td style={{ ...tdBase, textAlign: "right", color: row.cumulative < 0 ? "#9a3922" : "#2d3a35", fontWeight: isLowest ? 700 : 400 }}>
+                        {currency(row.cumulative)}
+                        {isLowest && <span style={{ fontSize: 9, color: "#9a3922", marginLeft: 4 }}>▼ low</span>}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr style={{ background: "#f4f7f5" }}>
+                <td style={{ fontSize: 11, fontWeight: 600, color: "#6b8f84", padding: "8px 16px", borderTop: "1.5px solid #e2eae6" }}>Full year</td>
+                <td style={{ fontSize: 11, color: "#3d6b5e", padding: "8px 10px", textAlign: "right", borderTop: "1.5px solid #e2eae6" }}>{currency(netMonthly * 12)}</td>
+                <td style={{ fontSize: 11, color: "#6b7a74", padding: "8px 10px", textAlign: "right", borderTop: "1.5px solid #e2eae6" }}>
+                  ({currency((rows[0]?.fixed || 0) * 12)})
+                </td>
+                <td style={{ fontSize: 11, color: "#9a3922", padding: "8px 10px", textAlign: "right", borderTop: "1.5px solid #e2eae6" }}>
+                  {rows.some(r => r.annual > 0) ? `(${currency(rows.reduce((s, r) => s + r.annual, 0))})` : "—"}
+                </td>
+                <td
+                  colSpan={startingCash > 0 ? 2 : 1}
+                  style={{ fontSize: 11, fontWeight: 700, padding: "8px 10px", textAlign: "right", borderTop: "1.5px solid #e2eae6", color: rows.reduce((s, r) => s + r.net, 0) >= 0 ? "#3d6b5e" : "#9a3922" }}
+                >
+                  {currency(rows.reduce((s, r) => s + r.net, 0))} annual
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
+      <div style={{ fontSize: 10, color: "#b0bab6", padding: "8px 16px", borderTop: "1px solid #f0f4f2" }}>
+        ★ Annual expenses without a month assigned are smoothed into Fixed spend. Income estimated from FY2025-26 marginal rates.
+      </div>
+    </div>
+  );
+}
+
 // ─── BUDGET ITEM ROW ─────────────────────────────────────────────────────────
 
 function BudgetItem({ item, onUpdate, onRemove }) {
@@ -185,8 +378,12 @@ function BudgetItem({ item, onUpdate, onRemove }) {
       <div style={{ width: 100, flexShrink: 0 }}>
         <Input value={item.amount} onChange={v => onUpdate(item.id, { amount: v })} placeholder="0" prefix="$" />
       </div>
+      {/* Mo / Yr toggle */}
       <button
-        onClick={() => onUpdate(item.id, { frequency: isAnnual ? "monthly" : "annual" })}
+        onClick={() => isAnnual
+          ? onUpdate(item.id, { frequency: "monthly", month: null })
+          : onUpdate(item.id, { frequency: "annual" })
+        }
         title={isAnnual ? "Switch to monthly" : "Switch to annual"}
         style={{
           flexShrink: 0, padding: "4px 9px", border: "1.5px solid",
@@ -197,6 +394,28 @@ function BudgetItem({ item, onUpdate, onRemove }) {
           cursor: "pointer", fontFamily: "inherit",
         }}
       >{isAnnual ? "Yr" : "Mo"}</button>
+      {/* Month picker — only for annual items */}
+      {isAnnual && (
+        <select
+          value={item.month || ""}
+          onChange={e => onUpdate(item.id, { month: e.target.value ? parseInt(e.target.value) : null })}
+          title="Which month does this fall due?"
+          style={{
+            flexShrink: 0, padding: "4px 5px", width: 52,
+            border: `1.5px solid ${item.month ? "#3d6b5e" : "#d4ddd9"}`,
+            borderRadius: 6, fontSize: 11,
+            color: item.month ? "#3d6b5e" : "#a0aba6",
+            background: item.month ? "#eaf2ef" : "#f9faf9",
+            outline: "none", fontFamily: "inherit", cursor: "pointer",
+            appearance: "none", textAlign: "center",
+          }}
+        >
+          <option value="">Mo?</option>
+          {MONTH_SHORT.map((m, i) => (
+            <option key={i + 1} value={i + 1}>{m}</option>
+          ))}
+        </select>
+      )}
       <button
         onClick={() => onRemove(item.id)}
         style={{
@@ -283,9 +502,9 @@ function AddItemPicker({ categoryKey, onAdd, onCancel }) {
 // ─── BUDGET CATEGORY ─────────────────────────────────────────────────────────
 
 function BudgetCategory({ cat, items, onAddItem, onUpdateItem, onRemoveItem }) {
-  const catTotal   = items.reduce((s, item) => s + itemMonthly(item), 0);
-  const hasAnnual  = items.some(i => i.frequency === "annual");
-  const [expanded, setExpanded]   = useState(items.length > 0);
+  const catTotal  = items.reduce((s, item) => s + itemMonthly(item), 0);
+  const hasAnnual = items.some(i => i.frequency === "annual");
+  const [expanded,   setExpanded]   = useState(items.length > 0);
   const [showPicker, setShowPicker] = useState(false);
 
   function handleAdd(label) {
@@ -295,7 +514,6 @@ function BudgetCategory({ cat, items, onAddItem, onUpdateItem, onRemoveItem }) {
 
   return (
     <div style={{ borderBottom: "1px solid #eaeeed" }}>
-      {/* Header */}
       <div
         onClick={() => { setExpanded(e => !e); setShowPicker(false); }}
         style={{
@@ -321,7 +539,6 @@ function BudgetCategory({ cat, items, onAddItem, onUpdateItem, onRemoveItem }) {
         <span style={{ color: "#b0bab6", fontSize: 10, flexShrink: 0 }}>{expanded ? "▲" : "▼"}</span>
       </div>
 
-      {/* Items + picker */}
       {expanded && (
         <div>
           {items.map(item => (
@@ -426,6 +643,11 @@ export default function Stage2({ data, setMany }) {
 
       {netMonthly > 0 && (bTotal > 0 || expenses > 0) && (
         <CashflowSummary netMonthly={netMonthly} expenses={expenses} savings={savings} surplus={surplus} />
+      )}
+
+      {/* Compact cashflow calendar preview — prompts month-setting or shows chip row */}
+      {netMonthly > 0 && items.length > 0 && (
+        <CashflowCalendar items={items} netMonthly={netMonthly} compact />
       )}
 
       <SectionDivider label="Other spending" />

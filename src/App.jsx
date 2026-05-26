@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { DEFAULT_SCENARIOS, getActiveAssumptions, runEngine, propertyAnnualCashflow, runMonteCarlo } from "./engine.js";
 import { currency, Field, Input, Select, Toggle, TwoCol, SectionDivider } from "./ui.jsx";
-import Stage2, { BUDGET_CATS, budgetTotal, itemMonthly } from "./BudgetStage.jsx";
+import Stage2, { BUDGET_CATS, budgetTotal, itemMonthly, estimateNetMonthly, CashflowCalendar } from "./BudgetStage.jsx";
+import AssetStage3, { deriveAssetTotals } from "./AssetStage.jsx";
 
 const STORAGE_KEY = "clearpath_v1";
 
@@ -49,8 +50,8 @@ const EMPTY_DATA = {
   monthlyExpenses: "", annualIrregular: "", savingsPerMonth: "",
   budgetItems: [],
   // Stage 3
-  cashSavings: "", offsetBalance: "", sharesEtfs: "", managedFunds: "",
-  crypto: "", otherInvestments: "", emergencyFund: "",
+  assetItems: [],
+  emergencyFund: "",
   // Stage 4
   ppOrValue: "", mortgageBalance: "", mortgageRate: "", loanType: "pi",
   hasInvestmentProperty: "no", ipValue: "", ipMortgage: "", ipRate: "",
@@ -104,15 +105,33 @@ function loadData() {
             label: cat.label,
             amount: String(val),
             frequency: "monthly",
+            month: null,
           });
         }
       });
     }
+
+    // Migrate legacy flat asset fields to assetItems array
+    let assetItems = parsed.assetItems || [];
+    if (assetItems.length === 0) {
+      const migrateAsset = (key, label, catKey) => {
+        const val = parseFloat(String(parsed[key] || "").replace(/,/g, "")) || 0;
+        if (val > 0) assetItems.push({ id: `migrated_${key}`, categoryKey: catKey, label, amount: String(val) });
+      };
+      migrateAsset("cashSavings",     "Cash savings",          "cash");
+      migrateAsset("offsetBalance",   "Offset account",        "cash");
+      migrateAsset("sharesEtfs",      "Shares & ETFs",         "shares");
+      migrateAsset("managedFunds",    "Managed funds",         "funds");
+      migrateAsset("crypto",          "Cryptocurrency",        "crypto");
+      migrateAsset("otherInvestments","Other investments",     "other");
+    }
+
     return {
       ...EMPTY_DATA,
       ...parsed,
       investmentProperties,
       budgetItems,
+      assetItems,
       customAssumptions: {
         base: { ...DEFAULT_SCENARIOS.base, ...(parsed.customAssumptions?.base || {}) },
         conservative: { ...DEFAULT_SCENARIOS.conservative, ...(parsed.customAssumptions?.conservative || {}) },
@@ -203,15 +222,20 @@ INCOME & CASHFLOW
 Gross income: ${currency(data.grossIncome)}${couple ? ` | Partner income: ${currency(data.partnerIncome)}` : ""}
 Bonus/other income: ${currency(data.bonusIncome)} | Other: ${currency(data.otherIncome)}
 ${(() => {
+  const MNAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const items = data.budgetItems || [];
   const bt = budgetTotal(items);
   if (bt > 0) {
     const lines = items.map(item => {
       const mo = itemMonthly(item);
-      const annualNote = item.frequency === "annual"
-        ? ` (${currency(parseFloat(String(item.amount || "").replace(/,/g, "")) || 0)}/year)`
-        : "";
-      return `  ${item.label}: ${currency(mo)}/month${annualNote}`;
+      const p = parseFloat(String(item.amount || "").replace(/,/g, "")) || 0;
+      let note = "";
+      if (item.frequency === "annual") {
+        note = item.month
+          ? ` (${currency(p)}/year — due ${MNAMES[item.month - 1]})`
+          : ` (${currency(p)}/year — month not set)`;
+      }
+      return `  ${item.label}: ${currency(mo)}/month${note}`;
     }).join("\n");
     return `Monthly budget breakdown:\n${lines}\n  Total: ${currency(bt)}/month (${currency(bt * 12)}/year)`;
   }
@@ -220,9 +244,16 @@ ${(() => {
 Annual irregular: ${currency(data.annualIrregular)} | Monthly savings: ${currency(data.savingsPerMonth)}
 
 ASSETS & SAVINGS
-Cash savings: ${currency(data.cashSavings)} | Offset: ${currency(data.offsetBalance)}
-Shares/ETFs: ${currency(data.sharesEtfs)} | Managed funds: ${currency(data.managedFunds)}
-Crypto: ${currency(data.crypto)} | Other investments: ${currency(data.otherInvestments)}
+${(() => {
+  const aItems = data.assetItems || [];
+  const totals = deriveAssetTotals(aItems);
+  const totalLiquid = totals.cashSavings + totals.sharesEtfs + totals.managedFunds + totals.crypto + totals.otherInvestments;
+  if (aItems.length > 0) {
+    const lines = aItems.map(i => `  ${i.label}: ${currency(i.amount)}`).join("\n");
+    return `Assets (${aItems.length} items, total liquid ${currency(totalLiquid)}):\n${lines}`;
+  }
+  return `Cash savings: — | Shares/ETFs: — | Managed funds: — | Crypto: — | Other: —`;
+})()}
 Emergency fund: ${currency(data.emergencyFund)}
 
 PROPERTY & DEBT
@@ -334,28 +365,7 @@ function Stage1({ data, set }) {
 }
 
 
-function Stage3({ data, set }) {
-  return (
-    <div>
-      <TwoCol>
-        <Field label="Cash savings"><Input value={data.cashSavings} onChange={v => set("cashSavings", v)} placeholder="15,000" prefix="$" /></Field>
-        <Field label="Offset account balance"><Input value={data.offsetBalance} onChange={v => set("offsetBalance", v)} placeholder="0" prefix="$" /></Field>
-      </TwoCol>
-      <TwoCol>
-        <Field label="Shares / ETFs"><Input value={data.sharesEtfs} onChange={v => set("sharesEtfs", v)} placeholder="0" prefix="$" /></Field>
-        <Field label="Managed funds"><Input value={data.managedFunds} onChange={v => set("managedFunds", v)} placeholder="0" prefix="$" /></Field>
-      </TwoCol>
-      <TwoCol>
-        <Field label="Cryptocurrency"><Input value={data.crypto} onChange={v => set("crypto", v)} placeholder="0" prefix="$" /></Field>
-        <Field label="Other investments"><Input value={data.otherInvestments} onChange={v => set("otherInvestments", v)} placeholder="0" prefix="$" /></Field>
-      </TwoCol>
-      <SectionDivider label="Emergency position" />
-      <Field label="Dedicated emergency fund" hint="Separate from everyday savings">
-        <Input value={data.emergencyFund} onChange={v => set("emergencyFund", v)} placeholder="10,000" prefix="$" />
-      </Field>
-    </div>
-  );
-}
+// Stage 3 is now AssetStage3 — imported from AssetStage.jsx
 
 // ─── PROPERTY PORTFOLIO COMPONENTS ──────────────────────────────────────────
 
@@ -1258,8 +1268,9 @@ function ScenarioComparisonRow({ data }) {
     { key: "base",         label: "Base",         color: "#3d6b5e", bg: "#eaf2ef", bdr: "#c4ddd6" },
     { key: "aggressive",   label: "Aggressive",   color: "#2a5480", bg: "#eaf0f8", bdr: "#b8cde0" },
   ];
+  const assetTotals = deriveAssetTotals(data.assetItems);
   const engines = SCENS.map(({ key }) =>
-    runEngine({ ...data, activeScenario: key, useCustomAssumptions: false })
+    runEngine({ ...data, ...assetTotals, activeScenario: key, useCustomAssumptions: false })
   );
   return (
     <div style={{ marginBottom: 20 }}>
@@ -1329,7 +1340,8 @@ function AnalysisScreen({ data, set }) {
   const [errorMsg, setErrorMsg] = useState("");
   const hasGenerated = useRef(false);
 
-  const engine = runEngine(data);
+  const derivedData = { ...data, ...deriveAssetTotals(data.assetItems) };
+  const engine = runEngine(derivedData);
 
   async function generate() {
     setStatus("loading");
@@ -1378,6 +1390,14 @@ function AnalysisScreen({ data, set }) {
       <MonteCarloCard data={data} engine={engine} />
       <NetWorthChart engine={engine} data={data} />
       <ScenarioComparisonRow data={data} />
+
+      {(data.budgetItems || []).length > 0 && (() => {
+        const netMo = estimateNetMonthly(data);
+        const startCash = deriveAssetTotals(data.assetItems).cashSavings;
+        return netMo > 0
+          ? <CashflowCalendar items={data.budgetItems} netMonthly={netMo} startingCash={startCash} />
+          : null;
+      })()}
 
       {status === "loading" && (
         <div style={{ textAlign: "center", padding: "48px 0" }}>
@@ -1471,15 +1491,16 @@ export default function ClearpathMVP() {
   const currentStage = STAGES[stage - 1];
 
   const allIPs = data.investmentProperties || [];
-  const totalAssets = [data.cashSavings, data.offsetBalance, data.sharesEtfs, data.managedFunds,
-    data.crypto, data.otherInvestments, data.superBalance, data.ppOrValue,
+  const _at = deriveAssetTotals(data.assetItems);
+  const totalAssets = [_at.cashSavings, _at.sharesEtfs, _at.managedFunds,
+    _at.crypto, _at.otherInvestments, data.superBalance, data.ppOrValue,
     ...allIPs.map(ip => ip.value)]
     .reduce((sum, v) => sum + (parseFloat(String(v).replace(/,/g, "")) || 0), 0);
   const totalDebt = [data.mortgageBalance, data.creditCardDebt, data.personalLoanDebt, data.hecsDebt,
     ...allIPs.map(ip => ip.mortgageBalance)]
     .reduce((sum, v) => sum + (parseFloat(String(v).replace(/,/g, "")) || 0), 0);
   const netWorth = totalAssets - totalDebt;
-  const monthlyLiquid = parseFloat(String(data.cashSavings).replace(/,/g, "")) || 0;
+  const monthlyLiquid = _at.cashSavings;
   const monthlyExp = parseFloat(String(data.monthlyExpenses).replace(/,/g, "")) || 1;
   const runway = monthlyLiquid > 0 && monthlyExp > 0 ? (monthlyLiquid / monthlyExp).toFixed(1) : "—";
 
@@ -1523,7 +1544,7 @@ export default function ClearpathMVP() {
         </div>
       </div>
 
-      {(data.grossIncome || data.superBalance || data.cashSavings) && (
+      {(data.grossIncome || data.superBalance || (data.assetItems || []).length > 0) && (
         <div style={{ background: "#3d6b5e", padding: "10px 28px", display: "flex", gap: 24, overflowX: "auto" }}>
           {[
             { label: "Net Worth", value: currency(netWorth) },
@@ -1551,7 +1572,7 @@ export default function ClearpathMVP() {
           <div ref={scrollRef} style={{ background: "white", borderRadius: 18, border: "1px solid #e2eae6", padding: "28px", animation: "fadeIn 0.25s ease", boxShadow: "0 2px 16px rgba(0,0,0,0.04)" }}>
             {stage === 1 && <Stage1 data={data} set={set} />}
             {stage === 2 && <Stage2 data={data} setMany={setMany} />}
-            {stage === 3 && <Stage3 data={data} set={set} />}
+            {stage === 3 && <AssetStage3 data={data} setMany={setMany} />}
             {stage === 4 && <Stage4 data={data} set={set} />}
             {stage === 5 && <Stage5 data={data} set={set} />}
             {stage === 6 && <Stage6 data={data} set={set} />}
