@@ -87,17 +87,25 @@ const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct"
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
+// FY2026-27 Australian resident income tax rates
+// Brackets: $0–$18,200 Nil | $18,201–$45,000 16c | $45,001–$135,000 30c |
+//           $135,001–$190,000 37c | $190,001+ 45c  (+2% Medicare levy)
+// Note: compiled ATO figures ($4,288 / $31,288 / $51,638) confirm 16c for the
+//       bottom bracket; LITO unchanged from Stage 3 (max $700, phases to $0 at $66,667).
 function annualTax(grossIncome) {
   const g = Math.max(0, parseFloat(String(grossIncome).replace(/,/g, "")) || 0);
   if (!g) return 0;
   let tax = 0;
-  if (g > 18200)  tax += (Math.min(g, 45000)  - 18200)  * 0.19;
-  if (g > 45000)  tax += (Math.min(g, 120000) - 45000)  * 0.325;
-  if (g > 120000) tax += (Math.min(g, 180000) - 120000) * 0.37;
-  if (g > 180000) tax += (g - 180000) * 0.45;
-  if (g > 23365)  tax += g * 0.02;
+  // Income tax — FY2026-27 brackets
+  if (g > 18200)  tax += (Math.min(g, 45000)  - 18200)  * 0.16;  // 16c
+  if (g > 45000)  tax += (Math.min(g, 135000) - 45000)  * 0.30;  // 30c
+  if (g > 135000) tax += (Math.min(g, 190000) - 135000) * 0.37;  // 37c
+  if (g > 190000) tax += (g - 190000) * 0.45;                    // 45c
+  // Medicare levy — 2% on all income (threshold irrelevant for target users)
+  tax += g * 0.02;
+  // Low Income Tax Offset (LITO) — max $700, fully phases out at $66,667
   if (g <= 37500)      tax -= 700;
-  else if (g <= 45000) tax -= (700 - (g - 37500) * 0.05);
+  else if (g <= 45000) tax -= Math.max(0, 700 - (g - 37500) * 0.05);
   else if (g <= 66667) tax -= Math.max(0, 325 - (g - 45000) * 0.015);
   return Math.max(0, Math.round(tax));
 }
@@ -197,7 +205,7 @@ function CashflowSummary({ netMonthly, expenses, savings, surplus }) {
         </span>
       </div>
       <div style={{ fontSize: 10, color: "#b0bab6", marginTop: 6 }}>
-        ★ Income estimate based on FY2025-26 marginal rates. Salary sacrifice deducted where entered.
+        ★ Income estimate based on FY2026-27 marginal rates. Salary sacrifice deducted where entered.
       </div>
     </div>
   );
@@ -360,7 +368,7 @@ export function CashflowCalendar({ items, netMonthly, startingCash = 0, compact 
         </div>
       )}
       <div style={{ fontSize: 10, color: "#b0bab6", padding: "8px 16px", borderTop: "1px solid #f0f4f2" }}>
-        ★ Annual expenses without a month assigned are smoothed into Fixed spend. Income estimated from FY2025-26 marginal rates.
+        ★ Annual expenses without a month assigned are smoothed into Fixed spend. Income estimated from FY2026-27 marginal rates.
       </div>
     </div>
   );
