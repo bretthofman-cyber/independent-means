@@ -88,16 +88,17 @@ const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct"
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
 
 // FY2026-27 Australian resident income tax rates
-// Brackets: $0–$18,200 Nil | $18,201–$45,000 16c | $45,001–$135,000 30c |
+// Source: budget.gov.au — "Tax cuts for every taxpayer from 1 July 2026"
+// Brackets: $0–$18,200 Nil | $18,201–$45,000 15c | $45,001–$135,000 30c |
 //           $135,001–$190,000 37c | $190,001+ 45c  (+2% Medicare levy)
-// Note: compiled ATO figures ($4,288 / $31,288 / $51,638) confirm 16c for the
-//       bottom bracket; LITO unchanged from Stage 3 (max $700, phases to $0 at $66,667).
+// 15c saves up to $268/yr vs 2024-25 (16c); 14c from 1 Jul 2027 saves up to $536/yr.
+// LITO unchanged: max $700, phases to $0 at $66,667.
 function annualTax(grossIncome) {
   const g = Math.max(0, parseFloat(String(grossIncome).replace(/,/g, "")) || 0);
   if (!g) return 0;
   let tax = 0;
   // Income tax — FY2026-27 brackets
-  if (g > 18200)  tax += (Math.min(g, 45000)  - 18200)  * 0.16;  // 16c
+  if (g > 18200)  tax += (Math.min(g, 45000)  - 18200)  * 0.15;  // 15c (down from 16c)
   if (g > 45000)  tax += (Math.min(g, 135000) - 45000)  * 0.30;  // 30c
   if (g > 135000) tax += (Math.min(g, 190000) - 135000) * 0.37;  // 37c
   if (g > 190000) tax += (g - 190000) * 0.45;                    // 45c
