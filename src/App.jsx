@@ -1399,19 +1399,6 @@ function AnalysisScreen({ data, set }) {
 
   return (
     <div>
-      {/* ── Risk appetite ── */}
-      <Field label="Risk appetite">
-        <Toggle
-          value={data.riskTolerance}
-          onChange={v => set("riskTolerance", v)}
-          options={[
-            { value: "conservative", label: "Conservative" },
-            { value: "balanced", label: "Balanced" },
-            { value: "growth", label: "Growth" },
-          ]}
-        />
-      </Field>
-
       {/* ── Planning scenario ── */}
       <SectionDivider label="Planning scenario & assumptions" />
 
