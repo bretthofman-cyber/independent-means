@@ -134,6 +134,8 @@ function loadData() {
         return { key, label: opt?.label || key, amount: "", frequency: "annual", additive: false };
       });
     }
+    // Remove corrupted goal entries where key or label is not a string
+    goals = goals.filter(g => typeof g.key === "string" && g.key.length > 0 && typeof g.label === "string");
 
     return {
       ...EMPTY_DATA,
