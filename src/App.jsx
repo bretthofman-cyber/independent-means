@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { DEFAULT_SCENARIOS, getActiveAssumptions, runEngine, propertyAnnualCashflow, runMonteCarlo } from "./engine.js";
 import { currency, Field, Input, Select, Toggle, TwoCol, SectionDivider } from "./ui.jsx";
-import Stage2, { BUDGET_CATS, budgetTotal, itemMonthly, estimateNetMonthly, CashflowCalendar } from "./BudgetStage.jsx";
+import Stage2, { BUDGET_CATS, budgetTotal, itemMonthly, estimateNetMonthly, CashflowCalendar, buildCashflowCalendar } from "./BudgetStage.jsx";
 import AssetStage3, { deriveAssetTotals } from "./AssetStage.jsx";
 
 const STORAGE_KEY = "clearpath_v1";
@@ -36,7 +36,7 @@ const STAGES = [
   { id: 4, label: "Property", icon: "🏠", title: "Property & Debt",         subtitle: "Leverage and obligations" },
   { id: 5, label: "Super",    icon: "📈", title: "Superannuation",          subtitle: "Your retirement engine" },
   { id: 6, label: "Goals",    icon: "🎯", title: "Goals & Scenarios",       subtitle: "Your priorities and planning assumptions" },
-  { id: 7, label: "Analysis", icon: "✦",  title: "Your Financial Picture",  subtitle: "AI-powered insights" },
+  { id: 7, label: "Analysis", icon: "✦",  title: "Your Financial Picture",  subtitle: "Financial summary & discussion points" },
 ];
 
 
@@ -158,157 +158,6 @@ function saveData(data) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
 }
 
-
-function buildPrompt(data, engine) {
-  const couple = data.hasPartner === "yes";
-  const ips = data.investmentProperties || [];
-  const assumptions = getActiveAssumptions(data);
-  const scenario = data.activeScenario || "base";
-  const scenarioLabel = { base: "Base", conservative: "Conservative", aggressive: "Aggressive" }[scenario];
-  const goals = (data.goals || []).join(", ") || "Not specified";
-  const lifestyle = { basic: "Basic / frugal", comfortable: "Comfortable", generous: "Generous / lifestyle-rich" }[data.retirementLifestyle] || "Comfortable";
-  const risk = { conservative: "Conservative", balanced: "Balanced", growth: "Growth-oriented" }[data.riskTolerance] || "Balanced";
-
-  const m = engine?.metrics;
-  const mort = engine?.mortgage;
-  const dd = engine?.drawdown;
-
-  const mortgageLine = !mort
-    ? "No mortgage recorded"
-    : mort.type === "io"
-    ? "Mortgage: interest-only (principal does not reduce)"
-    : `Mortgage debt-free year: ${mort.debtFreeYear} (${mort.yearsToPayoff} yrs remaining, ${currency(mort.monthlyPayment)}/month repayment)`;
-
-  const fundedLine = !dd || !parseFloat(data.targetRetirementSpending)
-    ? "Retirement spending target not entered"
-    : m.lastsToLifeExpectancy
-    ? `Super funded to age ${data.lifeExpectancy} — full life expectancy covered`
-    : `Super depletes at age ${m.depletionAge} (${m.depletionAge - (parseFloat(data.retirementAge) || 65)} years into retirement)`;
-
-  const mc = engine?.monteCarlo;
-  const mcLine = mc
-    ? `Monte Carlo probability of funding retirement to age ${data.lifeExpectancy}: ${mc.successRate}% (${mc.successRate >= 85 ? "Strong" : mc.successRate >= 70 ? "Watch zone" : "Needs attention"}) — super at retirement range ${currency(mc.retirementBalance.p10)}–${currency(mc.retirementBalance.p90)}, median ${currency(mc.retirementBalance.p50)} (${mc.iterations} simulations, ${Math.round(mc.stdDev * 100)}% annual volatility)`
-    : "Monte Carlo: retirement spending target not entered";
-
-  const engineSection = engine ? `
-PRE-CALCULATED PROJECTIONS (engine-verified at ${scenarioLabel} scenario assumptions — quote these exact figures in your analysis, do not re-estimate)
-Projected super at retirement (age ${data.retirementAge}): ${currency(m.projectedSuper)}
-Super required for target retirement spending: ${currency(m.requiredSuper)}
-Super ${m.onTrack ? `surplus: +${currency(m.superSurplus)}` : `shortfall: −${currency(Math.abs(m.superSurplus))}`}
-Annual retirement spending in future dollars: ${currency(dd.futureSpending)}/year
-${fundedLine}
-${mcLine}
-Net worth at retirement: ${currency(m.retirementNetWorth)}
-${mortgageLine}
-` : "";
-
-  return `Please analyse this Australian household's financial position and provide structured insights.
-
-ACTIVE SCENARIO: ${scenarioLabel} ${data.useCustomAssumptions ? "(custom assumptions)" : "(default assumptions)"}
-Planning assumptions: Investment return ${assumptions.returnRate}% p.a. | Inflation ${assumptions.inflation}% p.a. | Property growth ${assumptions.propertyGrowth}% p.a. | Rental growth ${assumptions.rentalGrowth}% p.a. | Safe withdrawal rate ${assumptions.safeWithdrawal}%
-
-HOUSEHOLD PROFILE
-Name: ${data.firstName || "User"} | Age: ${data.age} | ${couple ? `Partner age: ${data.partnerAge} | ` : ""}${couple ? "Couple" : "Single"} | Dependants: ${data.dependants}
-Location: ${data.location} | Employment: ${data.employmentStatus}
-Target retirement age: ${data.retirementAge}${couple && data.partnerRetirementAge ? ` | Partner retirement age: ${data.partnerRetirementAge}` : ""} | Life expectancy: ${data.lifeExpectancy}
-Home ownership: ${data.homeOwnership}
-
-GOALS & PREFERENCES
-Retirement lifestyle target: ${lifestyle}
-Risk tolerance: ${risk}
-Goals: ${goals}
-
-INCOME & CASHFLOW
-Gross income: ${currency(data.grossIncome)}${couple ? ` | Partner income: ${currency(data.partnerIncome)}` : ""}
-Bonus/other income: ${currency(data.bonusIncome)} | Other: ${currency(data.otherIncome)}
-${(() => {
-  const MNAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  const items = data.budgetItems || [];
-  const bt = budgetTotal(items);
-  if (bt > 0) {
-    const lines = items.map(item => {
-      const mo = itemMonthly(item);
-      const p = parseFloat(String(item.amount || "").replace(/,/g, "")) || 0;
-      let note = "";
-      if (item.frequency === "annual") {
-        note = item.month
-          ? ` (${currency(p)}/year — due ${MNAMES[item.month - 1]})`
-          : ` (${currency(p)}/year — month not set)`;
-      } else if (item.frequency === "quarterly") {
-        note = item.month
-          ? ` (${currency(p)}/quarter — starts ${MNAMES[item.month - 1]}, repeats every 3 months)`
-          : ` (${currency(p)}/quarter — start month not set)`;
-      }
-      return `  ${item.label}: ${currency(mo)}/month${note}`;
-    }).join("\n");
-    return `Monthly budget breakdown:\n${lines}\n  Total: ${currency(bt)}/month (${currency(bt * 12)}/year)`;
-  }
-  return `Monthly expenses: ${currency(data.monthlyExpenses)}`;
-})()}
-Annual irregular: ${currency(data.annualIrregular)} | Monthly savings: ${currency(data.savingsPerMonth)}
-
-ASSETS & SAVINGS
-${(() => {
-  const aItems = data.assetItems || [];
-  const totals = deriveAssetTotals(aItems);
-  const totalLiquid = totals.cashSavings + totals.sharesEtfs + totals.managedFunds + totals.crypto + totals.otherInvestments;
-  if (aItems.length > 0) {
-    const lines = aItems.map(i => `  ${i.label}: ${currency(i.amount)}`).join("\n");
-    return `Assets (${aItems.length} items, total liquid ${currency(totalLiquid)}):\n${lines}`;
-  }
-  return `Cash savings: — | Shares/ETFs: — | Managed funds: — | Crypto: — | Other: —`;
-})()}
-Emergency fund: ${currency(data.emergencyFund)}
-
-PROPERTY & DEBT
-PPOR value: ${currency(data.ppOrValue)} | Mortgage: ${currency(data.mortgageBalance)} @ ${data.mortgageRate}% (${data.loanType === "pi" ? "P&I" : "Interest Only"})
-${ips.length === 0 ? "No investment properties" : ips.map(ip => {
-  const cf = engine?.propertyCashflows?.find(c => c.id === ip.id);
-  const val = parseFloat(String(ip.value).replace(/,/g, "")) || 0;
-  const mort = parseFloat(String(ip.mortgageBalance).replace(/,/g, "")) || 0;
-  const equity = val - mort;
-  const lines = [
-    `${ip.label} (${ip.status === "planned" ? `planned purchase ${ip.purchaseYear}` : "existing"})`,
-    `  Value: ${currency(ip.value)} | Mortgage: ${currency(ip.mortgageBalance)} @ ${ip.mortgageRate}% ${ip.loanType === "io" ? "IO" : "P&I"} | Equity: ${currency(equity)}`,
-  ];
-  if (cf && ip.weeklyRent) {
-    lines.push(`  Gross rent: ${currency(cf.grossRent)}/yr | Net cashflow: ${currency(cf.netCashflow)}/yr | ${cf.isNegativelyGeared ? "Negatively geared" : "Positively geared"}`);
-    if (cf.depreciation > 0) lines.push(`  Depreciation: ${currency(cf.depreciation)}/yr | Taxable income from IP: ${currency(cf.taxableIncome)}/yr`);
-  }
-  return lines.join("\n");
-}).join("\n")}
-Credit card debt: ${currency(data.creditCardDebt)} | Personal loan: ${currency(data.personalLoanDebt)} | HECS: ${currency(data.hecsDebt)}
-
-SUPERANNUATION
-Super balance: ${currency(data.superBalance)}${couple ? ` | Partner super: ${currency(data.partnerSuperBalance)}` : ""}
-Employer SG rate: ${data.employerSgRate}% | Salary sacrifice: ${currency(data.salarySacrifice)}/year
-Insurance in super: ${data.insuranceInSuper}
-Target retirement spending: ${currency(data.targetRetirementSpending)}/year
-${engineSection}
-Use the active scenario assumptions above in all projections. Acknowledge the scenario clearly in your analysis. Reference the pre-calculated projections above — do not invent different numbers.
-
-Please structure your response with these exact section headings and write each section completely before moving to the next. Do not repeat or restart any section.
-
-## Financial Health Summary
-Write 3 sentences summarising their overall position under the ${scenarioLabel} scenario.
-
-## Strengths
-List 4 specific strengths using numbered points (1. 2. 3. 4.).
-
-## Pressure Points
-List 4 specific concerns using numbered points (1. 2. 3. 4.).
-
-## Priority Actions
-List 5 prioritised actions using numbered points (1. 2. 3. 4. 5.). Be specific with dollar amounts where possible.
-
-## Retirement Outlook
-Write 3-4 sentences assessing retirement readiness under the ${scenarioLabel} scenario, referencing the ${assumptions.returnRate}% return and ${assumptions.inflation}% inflation assumptions. Quote the pre-calculated super projection and funded-to-age figures.
-
-## One Thing to Do This Month
-Write one specific, concrete sentence describing the single most important action.
-
-End with this exact disclaimer on its own line: This information is general in nature and is intended for educational and planning purposes only. It does not constitute personal financial advice.`;
-}
 
 // ─── STAGE FORMS ─────────────────────────────────────────────────────────────
 
@@ -851,63 +700,9 @@ function Stage6({ data, set }) {
   );
 }
 
-// ─── MARKDOWN RENDERER ───────────────────────────────────────────────────────
-
-function renderMarkdown(text) {
-  const elements = [];
-  const lines = text.split("\n");
-  let i = 0;
-  let listItems = [];
-  let listKey = 0;
-
-  function flushList() {
-    if (listItems.length === 0) return;
-    elements.push(
-      <ul key={"list-" + listKey++} style={{ paddingLeft: 20, margin: "6px 0 16px", listStyle: "none" }}>
-        {listItems.map((item, j) => (
-          <li key={j} style={{ fontSize: 14, color: "#2d3a35", lineHeight: 1.75, marginBottom: 8, paddingLeft: 16, position: "relative" }}>
-            <span style={{ position: "absolute", left: 0, color: "#3d6b5e", fontWeight: 600 }}>›</span>
-            <span dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
-          </li>
-        ))}
-      </ul>
-    );
-    listItems = [];
-  }
-
-  while (i < lines.length) {
-    const line = lines[i];
-    if (line.startsWith("## ") || line.startsWith("### ")) {
-      flushList();
-      elements.push(
-        <div key={"h-" + i} style={{
-          fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase",
-          color: "#3d6b5e", margin: "28px 0 12px", paddingBottom: 8, borderBottom: "1px solid #d4e8e0",
-        }}>
-          {line.replace(/^#{2,3}\s+/, "")}
-        </div>
-      );
-    } else if (/^(\d+\.\s+|[-•]\s*)/.test(line)) {
-      const content = line.replace(/^(\d+\.\s+|[-•]\s*)/, "").trim();
-      if (content) listItems.push(content);
-    } else if (line.trim() === "" || line.startsWith("---")) {
-      flushList();
-    } else if (line.trim()) {
-      flushList();
-      elements.push(
-        <p key={"p-" + i} style={{ fontSize: 14, color: "#2d3a35", lineHeight: 1.75, marginBottom: 10 }}
-          dangerouslySetInnerHTML={{ __html: line.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") }} />
-      );
-    }
-    i++;
-  }
-  flushList();
-  return elements;
-}
-
 // ─── ANALYSIS SCREEN ─────────────────────────────────────────────────────────
 
-function ScenarioToggle({ data, set, onRegenerate }) {
+function ScenarioToggle({ data, set }) {
   const scenarios = [
     { key: "base", label: "Base" },
     { key: "conservative", label: "Conservative" },
@@ -927,7 +722,7 @@ function ScenarioToggle({ data, set, onRegenerate }) {
         {scenarios.map(s => (
           <button
             key={s.key}
-            onClick={() => { set("activeScenario", s.key); onRegenerate(); }}
+            onClick={() => set("activeScenario", s.key)}
             style={{
               flex: 1, padding: "8px 0", border: "1.5px solid",
               borderColor: data.activeScenario === s.key ? "#3d6b5e" : "#d4ddd9",
@@ -1336,65 +1131,225 @@ function ScenarioComparisonRow({ data }) {
   );
 }
 
-// ─── ANALYSIS SCREEN ─────────────────────────────────────────────────────────
+function AnalysisSummary({ data, engine }) {
+  const n = v => parseFloat(String(v || "").replace(/,/g, "")) || 0;
+  const m    = engine?.metrics;
+  const mort = engine?.mortgage;
+  const dd   = engine?.drawdown;
+  const mc   = engine?.monteCarlo;
+
+  const couple = data.hasPartner === "yes";
+  const firstName = data.firstName || "";
+  const possessive = firstName ? `${firstName}'s` : (couple ? "Your household's" : "Your");
+  const scenarioLabel = { base: "Base", conservative: "Conservative", aggressive: "Aggressive" }[data.activeScenario || "base"];
+  const retireAge = n(data.retirementAge) || 65;
+  const lifeExp = n(data.lifeExpectancy) || 90;
+  const lifestyleLabel = { basic: "a basic", comfortable: "a comfortable", generous: "a generous, lifestyle-rich" }[data.retirementLifestyle] || "a comfortable";
+
+  const aT = deriveAssetTotals(data.assetItems || []);
+  const liquidTotal = aT.cashSavings + aT.sharesEtfs + aT.managedFunds + aT.crypto + aT.otherInvestments;
+  const allIPs = data.investmentProperties || [];
+  const totalAssets = [aT.cashSavings, aT.sharesEtfs, aT.managedFunds, aT.crypto, aT.otherInvestments,
+    n(data.superBalance), couple ? n(data.partnerSuperBalance) : 0, n(data.ppOrValue),
+    ...allIPs.map(ip => n(ip.value))].reduce((s, v) => s + v, 0);
+  const totalDebts = [n(data.mortgageBalance), n(data.creditCardDebt), n(data.personalLoanDebt), n(data.hecsDebt),
+    ...allIPs.map(ip => n(ip.mortgageBalance))].reduce((s, v) => s + v, 0);
+  const netWorth = totalAssets - totalDebts;
+
+  const netMonthly = estimateNetMonthly(data);
+  const budgetItems = data.budgetItems || [];
+  const totalExpenses = budgetTotal(budgetItems) || n(data.monthlyExpenses);
+  const savings = n(data.savingsPerMonth);
+  const monthlySurplus = netMonthly - totalExpenses - savings;
+  const calRows = budgetItems.length > 0 && netMonthly > 0
+    ? buildCashflowCalendar(budgetItems, netMonthly, aT.cashSavings) : [];
+  const tightMonths = calRows.filter(r => r.net < 0 || (r.annual > 0 && r.net < netMonthly * 0.3));
+
+  const hasSuperData = n(data.superBalance) > 0 && n(data.grossIncome) > 0;
+  const hasTarget = n(data.targetRetirementSpending) > 0;
+  const sgContrib = n(data.grossIncome) * ((n(data.employerSgRate) || 12) / 100);
+  const concCapHeadroom = Math.max(0, 30000 - sgContrib - n(data.salarySacrifice));
+
+  const hasMortgage = n(data.mortgageBalance) > 0;
+  const hasHecs = n(data.hecsDebt) > 0;
+  const hasCreditCard = n(data.creditCardDebt) > 0;
+  const hasPersonalLoan = n(data.personalLoanDebt) > 0;
+  const existingIPs = allIPs.filter(ip => ip.status === "existing");
+  const goals = data.goals || [];
+
+  const sections = [];
+
+  // ── 1. Position ──
+  if (totalAssets > 0 || netMonthly > 0) {
+    const parts = [];
+    let pos = `${possessive} net worth currently stands at ${currency(netWorth)}`;
+    if (liquidTotal > 0) pos += `, with ${currency(liquidTotal)} in liquid savings and investments`;
+    if (n(data.superBalance) > 0) {
+      const combinedNote = couple && n(data.partnerSuperBalance) > 0
+        ? ` (${currency(n(data.superBalance) + n(data.partnerSuperBalance))} combined)` : "";
+      pos += ` and ${currency(n(data.superBalance))} in super${combinedNote}`;
+    }
+    parts.push(pos + ".");
+    if (hasSuperData && m) {
+      parts.push(m.onTrack
+        ? `Under the ${scenarioLabel} scenario, super is projected to reach ${currency(m.projectedSuper)} at age ${retireAge} — ${currency(m.superSurplus)} ahead of the modelled retirement target.`
+        : `Under the ${scenarioLabel} scenario, super is projected to reach ${currency(m.projectedSuper)} at age ${retireAge} — ${currency(Math.abs(m.superSurplus))} below what's needed to fund the retirement spending target entered.`);
+    }
+    sections.push({ title: "Financial position", color: "#3d6b5e", text: parts.join(" ") });
+  }
+
+  // ── 2. Income & cashflow ──
+  if (netMonthly > 0) {
+    const parts = [];
+    let cf = `Estimated take-home income is ${currency(netMonthly)}/month after FY2026-27 tax${couple ? " across both incomes" : ""}.`;
+    if (totalExpenses > 0) {
+      const surplusText = monthlySurplus >= 0
+        ? `a ${currency(monthlySurplus)}/month surplus` : `a ${currency(Math.abs(monthlySurplus))}/month shortfall`;
+      cf += ` After ${currency(totalExpenses)}/month in spending${savings > 0 ? ` and ${currency(savings)}/month in savings` : ""}, the budget runs ${surplusText}.`;
+    }
+    parts.push(cf);
+    if (tightMonths.length > 0) {
+      parts.push(`Watch ${tightMonths.map(r => r.short).join(", ")} — ${tightMonths.length === 1 ? "that month sees" : "those months see"} lump-sum expenses that tighten cashflow against the monthly run-rate.`);
+    }
+    sections.push({ title: "Income & cashflow", color: "#2a5480", text: parts.join(" ") });
+  }
+
+  // ── 3. Super & retirement ──
+  if (hasSuperData) {
+    const parts = [];
+    if (hasTarget && dd) {
+      parts.push(`Targeting ${lifestyleLabel} retirement at ${currency(n(data.targetRetirementSpending))}/year today, growing to ${currency(dd.futureSpending)}/year by age ${retireAge}.`);
+      if (m?.lastsToLifeExpectancy) {
+        parts.push(`Projected super of ${currency(m.projectedSuper)} is sufficient to fund spending all the way to age ${lifeExp} — the full life expectancy modelled.`);
+      } else if (m?.depletionAge) {
+        parts.push(`Projected super of ${currency(m.projectedSuper)} would run out at age ${m.depletionAge}, ${m.depletionAge - retireAge} years into retirement. Closing the ${currency(Math.abs(m?.superSurplus || 0))} gap is worth modelling with an adviser.`);
+      }
+      if (mc) {
+        const confidence = mc.successRate >= 85 ? "a strong result" : mc.successRate >= 70 ? "a zone worth monitoring" : "an area that needs attention";
+        parts.push(`Across 1,000 simulations, there's a ${mc.successRate}% probability of funding retirement fully to age ${lifeExp} — ${confidence}.`);
+      }
+    } else {
+      const combinedNote = couple && n(data.partnerSuperBalance) > 0
+        ? ` (${currency(n(data.superBalance) + n(data.partnerSuperBalance))} combined)` : "";
+      parts.push(`Current super of ${currency(n(data.superBalance))}${combinedNote} is projected to reach ${currency(m?.projectedSuper || 0)} by age ${retireAge}. Enter a retirement spending target in Stage 5 to unlock the full funded-to-age and Monte Carlo analysis.`);
+    }
+    if (concCapHeadroom > 5000) {
+      parts.push(`${currency(Math.round(concCapHeadroom))} of concessional contribution capacity remains unused this year — salary sacrifice within this limit reduces taxable income and compounds inside super's lower tax environment.`);
+    }
+    sections.push({ title: "Superannuation & retirement", color: "#5a7840", text: parts.join(" ") });
+  }
+
+  // ── 4. Property & debt ──
+  if (hasMortgage || hasHecs || hasCreditCard || hasPersonalLoan || existingIPs.length > 0) {
+    const parts = [];
+    if (hasMortgage && mort) {
+      parts.push(mort.type === "io"
+        ? `The PPOR mortgage of ${currency(n(data.mortgageBalance))} is interest-only — the principal doesn't reduce and will need to be managed before or at maturity.`
+        : mort.debtFreeYear
+          ? `The PPOR mortgage of ${currency(n(data.mortgageBalance))} is on track to be cleared by ${mort.debtFreeYear} (${mort.yearsToPayoff} years remaining at ${currency(mort.monthlyPayment)}/month), freeing up meaningful cashflow once gone.`
+          : `Mortgage of ${currency(n(data.mortgageBalance))} is recorded.`);
+    }
+    existingIPs.forEach(ip => {
+      const cf = engine?.propertyCashflows?.find(c => c.id === ip.id);
+      if (cf) parts.push(`${ip.label || "Investment property"} is ${cf.isNegativelyGeared ? "negatively geared" : "positively geared"}, generating ${currency(cf.netCashflow)}/year net cashflow.`);
+    });
+    const otherDebts = [
+      hasCreditCard && `credit card (${currency(n(data.creditCardDebt))})`,
+      hasPersonalLoan && `personal loan (${currency(n(data.personalLoanDebt))})`,
+      hasHecs && `HECS-HELP (${currency(n(data.hecsDebt))}, repaid automatically via the tax system)`,
+    ].filter(Boolean);
+    if (otherDebts.length > 0) parts.push(`Other obligations on record: ${otherDebts.join(", ")}.`);
+    if (parts.length > 0) sections.push({ title: "Property & debt", color: "#7a5040", text: parts.join(" ") });
+  }
+
+  // ── 5. Goals ──
+  if (goals.length > 0) {
+    sections.push({ title: "Goals on your radar", color: "#6b5040",
+      text: `You've flagged: ${goals.join(", ")}. These aren't currently modelled in the projections — a financial adviser can help quantify the cost and timeline for each one.` });
+  }
+
+  // ── Adviser discussion points ──
+  const adviserPoints = [];
+  if (hasSuperData && concCapHeadroom > 5000)
+    adviserPoints.push(`Salary sacrifice and concessional contributions — ${currency(Math.round(concCapHeadroom))} of unused cap this year`);
+  if (hasSuperData && m && !m.onTrack && hasTarget)
+    adviserPoints.push(`Strategies to close the ${currency(Math.abs(m.superSurplus))} retirement gap — contributions timing, retirement age, or spending adjustments`);
+  if (hasMortgage && mort?.type === "pi")
+    adviserPoints.push("Offset account vs extra repayments vs investing the surplus — the right call depends on your mortgage rate vs expected after-tax returns");
+  if (hasMortgage && mort?.type === "io")
+    adviserPoints.push("Interest-only exit strategy — how to manage the transition when the IO period ends");
+  if (hasCreditCard || hasPersonalLoan)
+    adviserPoints.push("High-interest debt elimination — repaying credit cards and personal loans typically beats investing the same money");
+  if (hasHecs)
+    adviserPoints.push("HECS-HELP voluntary repayment — there's no interest charged, so it's rarely the priority, but it does affect borrowing capacity");
+  if (existingIPs.length > 0)
+    adviserPoints.push("Investment property tax position — depreciation schedule, negative gearing benefits, and CGT implications on eventual sale");
+  if (n(data.superBalance) > 0)
+    adviserPoints.push("Insurance review — life and income protection coverage inside and outside of super");
+  adviserPoints.push("Estate planning — will, super beneficiary nominations, and enduring power of attorney");
+
+  const SectionBlock = ({ title, color, text }) => (
+    <div style={{ marginBottom: 22 }}>
+      <div style={{
+        fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
+        color, marginBottom: 8, paddingBottom: 6, borderBottom: `1px solid ${color}30`,
+      }}>{title}</div>
+      <p style={{ fontSize: 14, lineHeight: 1.75, color: "#2d3a35", margin: 0 }}>{text}</p>
+    </div>
+  );
+
+  return (
+    <div style={{ marginTop: 4 }}>
+      <div style={{
+        background: "#eaf2ef", border: "1px solid #c4ddd6", borderRadius: 12,
+        padding: "14px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 12,
+      }}>
+        <div style={{
+          width: 34, height: 34, background: "#3d6b5e", borderRadius: "50%",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          fontFamily: "Instrument Serif, serif", fontSize: 17, color: "white", flexShrink: 0,
+        }}>C</div>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#3d6b5e", marginBottom: 1 }}>Clearpath Summary</div>
+          <div style={{ fontSize: 11, color: "#8a9e98" }}>
+            {firstName ? `Prepared for ${firstName}` : "Your financial picture"} · {scenarioLabel} scenario · General information only
+          </div>
+        </div>
+      </div>
+
+      {sections.map(s => <SectionBlock key={s.title} {...s} />)}
+
+      {adviserPoints.length > 0 && (
+        <div style={{ background: "#f4f7f5", border: "1px solid #e2eae6", borderRadius: 12, padding: "18px 18px 14px" }}>
+          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6b8f84", marginBottom: 12 }}>
+            Topics to discuss with your adviser
+          </div>
+          {adviserPoints.map((pt, i) => (
+            <div key={i} style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+              <div style={{ color: "#3d6b5e", fontWeight: 700, fontSize: 13, flexShrink: 0, marginTop: 2 }}>→</div>
+              <div style={{ fontSize: 13, lineHeight: 1.6, color: "#4a6660" }}>{pt}</div>
+            </div>
+          ))}
+          <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid #e2eae6", fontSize: 11, color: "#a0aba6", lineHeight: 1.5 }}>
+            The above are topics for discussion only. Nothing in this summary constitutes personal financial advice. For tailored recommendations, engage a licensed Australian financial adviser (AFSL holder).
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function AnalysisScreen({ data, set }) {
-  const [status, setStatus] = useState("idle");
-  const [response, setResponse] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-  const hasGenerated = useRef(false);
-
   const derivedData = { ...data, ...deriveAssetTotals(data.assetItems) };
   const engine = runEngine(derivedData);
 
-  async function generate() {
-    setStatus("loading");
-    setResponse("");
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 2500,
-          system: "You are Clearpath, a warm, intelligent Australian financial planning assistant. You provide clear, practical, Australia-specific financial guidance. Never present outputs as personal financial advice. Use plain English. Reference Australian concepts naturally: super, HECS, franking credits, offset accounts, negative gearing, Medicare levy, CGT discount, SG rate, concessional caps, preservation age. Write each section completely before moving to the next. Never repeat or restart a section. Always acknowledge the active planning scenario in your analysis. Use the pre-calculated projection figures from the prompt exactly as provided — do not re-estimate or contradict them.",
-          messages: [{ role: "user", content: buildPrompt(data, engine) }],
-        }),
-      });
-      const rawText = await res.text();
-      let result;
-      try {
-        result = JSON.parse(rawText);
-      } catch {
-        throw new Error(`Server returned ${res.status}: ${rawText.slice(0, 200)}`);
-      }
-      if (result.error) throw new Error(result.error.message || result.error || "API error");
-      const text = result.content?.[0]?.text || "";
-      setResponse(text);
-      setStatus("done");
-    } catch (e) {
-      setErrorMsg(e.message);
-      setStatus("error");
-    }
-  }
-
-  if (!hasGenerated.current && status === "idle") {
-    hasGenerated.current = true;
-    setTimeout(generate, 0);
-  }
-
-  function handleScenarioChange(field, value) {
-    set(field, value);
-  }
-
   return (
     <div>
-      <ScenarioToggle data={data} set={handleScenarioChange} onRegenerate={generate} />
+      <ScenarioToggle data={data} set={set} />
       <MetricsRow engine={engine} data={data} />
       <MonteCarloCard data={data} engine={engine} />
       <NetWorthChart engine={engine} data={data} />
       <ScenarioComparisonRow data={data} />
-
       {(data.budgetItems || []).length > 0 && (() => {
         const netMo = estimateNetMonthly(data);
         const startCash = deriveAssetTotals(data.assetItems).cashSavings;
@@ -1402,60 +1357,13 @@ function AnalysisScreen({ data, set }) {
           ? <CashflowCalendar items={data.budgetItems} netMonthly={netMo} startingCash={startCash} />
           : null;
       })()}
-
-      {status === "loading" && (
-        <div style={{ textAlign: "center", padding: "48px 0" }}>
-          <div style={{
-            width: 44, height: 44, border: "3px solid #e2eae6", borderTopColor: "#3d6b5e",
-            borderRadius: "50%", animation: "spin 0.8s linear infinite", margin: "0 auto 16px",
-          }} />
-          <div style={{ fontSize: 14, color: "#6b8f84" }}>Running your projections…</div>
-          <style>{"@keyframes spin { to { transform: rotate(360deg); } }"}</style>
-        </div>
-      )}
-
-      {status === "done" && (
-        <div>
-          <div style={{
-            background: "#eaf2ef", border: "1px solid #c4ddd6", borderRadius: 12,
-            padding: "14px 18px", marginBottom: 24, display: "flex", alignItems: "center", gap: 12,
-          }}>
-            <div style={{
-              width: 34, height: 34, background: "#3d6b5e", borderRadius: "50%",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontFamily: "Instrument Serif, serif", fontSize: 17, color: "white", flexShrink: 0,
-            }}>C</div>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#3d6b5e", marginBottom: 1 }}>Clearpath Analysis</div>
-              <div style={{ fontSize: 11, color: "#8a9e98" }}>
-                {data.firstName ? ("Personalised for " + data.firstName) : "Your financial picture"} · {({ base: "Base", conservative: "Conservative", aggressive: "Aggressive" })[data.activeScenario]} scenario · General information only
-              </div>
-            </div>
-          </div>
-          <div>{renderMarkdown(response)}</div>
-          <div style={{ marginTop: 28, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button onClick={generate} style={{
-              padding: "10px 20px", border: "1.5px solid #d4ddd9", borderRadius: 10,
-              background: "white", fontSize: 13, color: "#2d3a35", cursor: "pointer", fontFamily: "inherit",
-            }}>Regenerate</button>
-            <button onClick={() => window.print()} style={{
-              padding: "10px 20px", border: "none", borderRadius: 10,
-              background: "#3d6b5e", color: "white", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
-            }}>Print / Save PDF</button>
-          </div>
-        </div>
-      )}
-
-      {status === "error" && (
-        <div style={{ background: "#fdf4f0", border: "1px solid #f0d0c4", borderRadius: 12, padding: "20px 24px" }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: "#9a3922", marginBottom: 6 }}>Could not generate analysis</div>
-          <div style={{ fontSize: 13, color: "#7a4030", marginBottom: 16 }}>{errorMsg}</div>
-          <button onClick={generate} style={{
-            padding: "9px 18px", border: "1.5px solid #e0a090", borderRadius: 8,
-            background: "white", fontSize: 13, color: "#9a3922", cursor: "pointer", fontFamily: "inherit",
-          }}>Try again</button>
-        </div>
-      )}
+      <AnalysisSummary data={data} engine={engine} />
+      <div style={{ marginTop: 24, display: "flex", gap: 10 }}>
+        <button onClick={() => window.print()} style={{
+          padding: "10px 20px", border: "none", borderRadius: 10,
+          background: "#3d6b5e", color: "white", fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+        }}>Print / Save PDF</button>
+      </div>
     </div>
   );
 }
@@ -1589,7 +1497,7 @@ export default function ClearpathMVP() {
                 <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #d4ddd9", borderRadius: 12, background: "white", fontSize: 14, color: "#4a6660", cursor: "pointer", fontFamily: "inherit" }}>← Back</button>
               ) : <div />}
               <button onClick={next} style={{ padding: "12px 28px", border: "none", borderRadius: 12, background: "#3d6b5e", color: "white", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 12px rgba(61,107,94,0.3)" }}>
-                {stage === 6 ? "Generate My Analysis →" : "Continue →"}
+                {stage === 6 ? "View My Analysis →" : "Continue →"}
               </button>
             </div>
           )}
