@@ -186,6 +186,14 @@ function saveData(data) {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch {}
 }
 
+function loadStage() {
+  try { return Math.max(1, Math.min(7, parseInt(localStorage.getItem("clearpath_stage") || "1") || 1)); } catch { return 1; }
+}
+
+function saveStage(s) {
+  try { localStorage.setItem("clearpath_stage", String(s)); } catch {}
+}
+
 
 // ─── STAGE FORMS ─────────────────────────────────────────────────────────────
 
@@ -2397,7 +2405,7 @@ function ActionPlanScreen({ data }) {
 
 export default function ClearpathMVP() {
   const [data, setData] = useState(() => loadData());
-  const [stage, setStage] = useState(1);
+  const [stage, setStage] = useState(() => loadStage());
   const scrollRef = useRef(null);
 
   function set(field, value) {
@@ -2418,6 +2426,8 @@ export default function ClearpathMVP() {
 
   function goTo(s) {
     setStage(s);
+    saveStage(s);
+    window.scrollTo({ top: 0, behavior: "smooth" });
     setTimeout(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, 50);
   }
 
@@ -2487,7 +2497,7 @@ export default function ClearpathMVP() {
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {data.firstName && <div style={{ fontSize: 12, color: "#6B6655" }}>Hi, {data.firstName} 👋</div>}
           <button
-            onClick={() => { if (window.confirm("Clear all saved data?")) { localStorage.removeItem(STORAGE_KEY); setData({ ...EMPTY_DATA }); setStage(1); } }}
+            onClick={() => { if (window.confirm("Clear all saved data?")) { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem("clearpath_stage"); setData({ ...EMPTY_DATA }); setStage(1); } }}
             style={{ fontSize: 11, color: "#8A8270", background: "none", border: "1px solid #ECE7DB", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}
           >Clear data</button>
         </div>
@@ -2496,11 +2506,11 @@ export default function ClearpathMVP() {
       <div className="no-print" style={{ background: "white", borderBottom: "1px solid #ECE7DB", padding: "0 28px 14px" }}>
         <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
           {STAGES.map(s => (
-            <button key={s.id} onClick={() => s.id < stage ? goTo(s.id) : null}
+            <button key={s.id} onClick={() => goTo(s.id)}
               style={{
                 flex: 1, padding: "6px 0", border: "none",
                 background: s.id === stage ? "#2E4A3D" : s.id < stage ? "#D8D2C4" : "#ECE7DB",
-                borderRadius: 6, cursor: s.id < stage ? "pointer" : "default",
+                borderRadius: 6, cursor: "pointer",
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 2, transition: "all 0.2s",
               }}>
               <div style={{ fontSize: 12 }}>{s.icon}</div>
