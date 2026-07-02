@@ -1427,6 +1427,8 @@ function MonteCarloCard({ data, engine }) {
 // ─── NET WORTH CHART ──────────────────────────────────────────────────────────
 
 function NetWorthChart({ engine, data }) {
+  const [tooltip, setTooltip] = useState(null);
+  const svgRef = useRef(null);
   const trajectory = engine?.trajectory;
   if (!trajectory || trajectory.length < 2) return null;
 
@@ -1514,12 +1516,39 @@ function NetWorthChart({ engine, data }) {
     ...(hasLiq   ? [{ label: "Liquid",   color: "#9DB0A1", dash: "2 2", width: 1.5 }] : []),
   ];
 
+  function handleMouseMove(e) {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const svgX = (px / rect.width) * W;
+    const age = minAge + ((svgX - mg.left) / cW) * (maxAge - minAge);
+    const clamped = Math.max(minAge, Math.min(maxAge, Math.round(age)));
+    const pt = trajectory.find(t => t.age === clamped) || trajectory.reduce((a, b) => Math.abs(b.age - clamped) < Math.abs(a.age - clamped) ? b : a);
+    setTooltip({ age: pt.age, nw: pt.netWorth, sup: pt.superBalance, liq: pt.liquidAssets, prop: pt.propertyValue, x: px, pct: px / rect.width });
+  }
+
   return (
     <div style={{ background: "#FBFAF6", border: "1.5px solid #ECE7DB", borderRadius: 12, padding: "16px 16px 12px", marginBottom: 20 }}>
       <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8270", marginBottom: 12 }}>
         Net Worth Trajectory
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", overflow: "visible" }}>
+      <div style={{ position: "relative" }} onMouseLeave={() => setTooltip(null)}>
+      {tooltip && (
+        <div style={{
+          position: "absolute", top: 0, left: Math.min(tooltip.pct * 100, 70) + "%",
+          pointerEvents: "none", zIndex: 10,
+          background: "var(--tooltip-bg)", border: "1px solid var(--tooltip-border)",
+          borderRadius: 8, padding: "8px 12px", fontSize: 11, color: "var(--tooltip-text)",
+          boxShadow: "var(--tooltip-shadow)", whiteSpace: "nowrap",
+        }}>
+          <div style={{ fontWeight: 600, marginBottom: 4 }}>Age {tooltip.age}</div>
+          <div style={{ color: "var(--chart-networth)", fontFamily: "Spectral, serif", fontSize: 13 }}>Net worth: {fmt(tooltip.nw)}</div>
+          {hasSuper && tooltip.sup > 0 && <div style={{ color: "#4472a8" }}>Super: {fmt(tooltip.sup)}</div>}
+          {hasProp  && tooltip.prop > 0 && <div style={{ color: "#C2A06B" }}>Property: {fmt(tooltip.prop)}</div>}
+          {hasLiq   && tooltip.liq > 0  && <div style={{ color: "#9DB0A1" }}>Liquid: {fmt(tooltip.liq)}</div>}
+        </div>
+      )}
+      <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", overflow: "visible" }} onMouseMove={handleMouseMove}>
         <defs>
           <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%"   stopColor="var(--chart-networth)" stopOpacity="0.12" />
@@ -1579,7 +1608,21 @@ function NetWorthChart({ engine, data }) {
             {age === minAge || age === retirementAge || age === maxAge ? `Age ${age}` : age}
           </text>
         ))}
+
+        {/* Hover cursor line */}
+        {tooltip && (() => {
+          const cx = xS(tooltip.age);
+          const cy = yS(tooltip.nw);
+          return (
+            <g>
+              <line x1={cx} x2={cx} y1={mg.top} y2={mg.top + cH}
+                stroke="var(--chart-cursor)" strokeWidth="1" strokeDasharray="2 2" />
+              <circle cx={cx} cy={cy} r="4" fill="var(--chart-networth)" stroke="white" strokeWidth="2" />
+            </g>
+          );
+        })()}
       </svg>
+      </div>
 
       {/* Legend */}
       <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center", marginTop: 6, marginBottom: 8 }}>
@@ -2456,6 +2499,16 @@ export default function ClearpathMVP() {
   const progress = ((stage - 1) / 6) * 100;
   const currentStage = STAGES[stage - 1];
 
+  const stageHasData = {
+    1: !!(data.firstName || data.age),
+    2: !!(data.grossIncome || (data.budgetItems || []).length > 0),
+    3: (data.assetItems || []).length > 0,
+    4: !!(data.ppOrValue || (data.investmentProperties || []).length > 0 || data.mortgageBalance),
+    5: !!(data.superBalance || data.targetRetirementSpending),
+    6: stage >= 6,
+    7: stage >= 7,
+  };
+
   const allIPs = data.investmentProperties || [];
   const _at = deriveAssetTotals(data.assetItems);
   const totalAssets = [_at.cashSavings, _at.sharesEtfs, _at.managedFunds,
@@ -2530,18 +2583,25 @@ export default function ClearpathMVP() {
 
       <div className="no-print" style={{ background: "white", borderBottom: "1px solid #ECE7DB", padding: "0 28px 14px" }}>
         <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
-          {STAGES.map(s => (
-            <button key={s.id} onClick={() => goTo(s.id)}
-              style={{
-                flex: 1, padding: "6px 0", border: "none",
-                background: s.id === stage ? "#2E4A3D" : s.id < stage ? "#D8D2C4" : "#ECE7DB",
-                borderRadius: 6, cursor: "pointer",
-                display: "flex", flexDirection: "column", alignItems: "center", gap: 2, transition: "all 0.2s",
-              }}>
-              <div style={{ fontSize: 12 }}>{s.icon}</div>
-              <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.04em", color: s.id === stage ? "#EDE7D7" : s.id < stage ? "#2E4A3D" : "#9DB0A1", textTransform: "uppercase" }}>{s.label}</div>
-            </button>
-          ))}
+          {STAGES.map(s => {
+            const isActive = s.id === stage;
+            const hasData  = stageHasData[s.id];
+            return (
+              <button key={s.id} onClick={() => goTo(s.id)}
+                style={{
+                  flex: 1, padding: "6px 0", border: "none",
+                  background: isActive ? "#2E4A3D" : s.id < stage ? "#D8D2C4" : "#ECE7DB",
+                  borderRadius: 6, cursor: "pointer", position: "relative",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 2, transition: "all 0.2s",
+                }}>
+                <div style={{ fontSize: 12 }}>{s.icon}</div>
+                <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.04em", color: isActive ? "#EDE7D7" : s.id < stage ? "#2E4A3D" : "#9DB0A1", textTransform: "uppercase" }}>{s.label}</div>
+                {hasData && !isActive && (
+                  <div style={{ position: "absolute", top: 4, right: 4, width: 5, height: 5, borderRadius: "50%", background: "#2E4A3D" }} />
+                )}
+              </button>
+            );
+          })}
         </div>
         <div style={{ height: 3, background: "#ECE7DB", borderRadius: 2, overflow: "hidden" }}>
           <div style={{ height: "100%", width: progress + "%", background: "#C2A06B", borderRadius: 2, transition: "width 0.4s ease" }} />
