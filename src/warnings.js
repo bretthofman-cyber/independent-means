@@ -59,7 +59,7 @@ export function generateWarnings(data, engine) {
     add("critical", "DEPLETION",
       "Retirement funds projected to run out",
       `This scenario projects assets exhausted at age ${m.depletionAge} — ${shortfall} year${shortfall !== 1 ? "s" : ""} before the life expectancy of ${lifeExp} entered.`,
-      "This scenario models a shortfall. Consider increasing contributions, adjusting the retirement date, reducing the spending target, or reviewing the assumptions in the scenario selector."
+      "Key modelling levers are contribution rates, retirement date, spending target, and scenario assumptions — adjusting these inputs will update this projection."
     );
   }
 
@@ -67,7 +67,7 @@ export function generateWarnings(data, engine) {
     add("critical", "LOW_SUCCESS_PROB",
       "Less than 50% probability of funding full retirement",
       `Across ${mc.iterations.toLocaleString()} simulations, only ${mc.successRate}% project that assets last to age ${lifeExp}.`,
-      "This scenario models a high-risk outcome. Significant adjustments to contributions, spending target, or retirement timing may be required."
+      "Scenario inputs, contribution rates, and spending target are the primary modelling levers — adjusting these will update the projected outcome."
     );
   }
 
@@ -120,7 +120,7 @@ export function generateWarnings(data, engine) {
       add("high", "PARTNER_CONC_CAP_BREACH",
         `${partner}'s concessional contributions may exceed the $30,000 cap`,
         `Combined employer SG (${fmt(Math.round(sg2))}) and salary sacrifice (${fmt(p(ss2))}) for ${partner} total ${fmt(Math.round(sg2 + ss2))}/yr.`,
-        "Excess concessional contributions are taxed at the marginal rate. Consider reducing salary sacrifice."
+        "Excess concessional contributions are taxed at the marginal rate. Verify actual contribution amounts with your super fund and payroll."
       );
     }
   }
