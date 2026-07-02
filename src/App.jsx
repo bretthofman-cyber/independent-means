@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { DEFAULT_SCENARIOS, runEngine } from "./engine.js";
 import { LIFE_EVENT_TYPES, newLifeEvent } from "./lifeEvents.js";
 import { generateWarnings } from "./warnings.js";
+import { generatePlanItems, PLAN_CATEGORIES } from "./actionPlan.js";
 import { currency, Field, Input, Select, Toggle, TwoCol, SectionDivider } from "./ui.jsx";
 import Stage2, { BUDGET_CATS, budgetTotal, itemMonthly, estimateNetMonthly, CashflowCalendar, buildCashflowCalendar } from "./BudgetStage.jsx";
 import AssetStage3, { deriveAssetTotals } from "./AssetStage.jsx";
@@ -38,6 +39,7 @@ const STAGES = [
   { id: 4, label: "Property", icon: "🏠", title: "Property & Debt",        subtitle: "Leverage and obligations" },
   { id: 5, label: "Super",    icon: "📈", title: "Super & Goals",           subtitle: "Retirement engine and priorities" },
   { id: 6, label: "Analysis", icon: "✦",  title: "Your Financial Picture", subtitle: "Scenario, projections & discussion points" },
+  { id: 7, label: "Plan",     icon: "📋", title: "Your Plan Summary",      subtitle: "Observations based on your inputs" },
 ];
 
 
@@ -2199,6 +2201,118 @@ function AnalysisScreen({ data, set }) {
   );
 }
 
+// ─── ACTION PLAN SCREEN ───────────────────────────────────────────────────────
+
+const PRIORITY_STYLE = {
+  1: { border: "#9a3922", bg: "#fdf3f0", dot: "#9a3922", label: "Attention" },
+  2: { border: "#8B6914", bg: "#fdf8ed", dot: "#C2A06B", label: "Note"      },
+  3: { border: "#D8D2C4", bg: "#FBFAF6", dot: "#9DB0A1", label: "Info"      },
+};
+
+function PlanItem({ item }) {
+  const s = PRIORITY_STYLE[item.priority] || PRIORITY_STYLE[3];
+  return (
+    <div style={{ borderLeft: `3px solid ${s.border}`, background: s.bg, borderRadius: "0 8px 8px 0", padding: "12px 14px", marginBottom: 8 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: s.dot, flexShrink: 0, marginTop: 5 }} />
+        <div style={{ fontSize: 13, fontWeight: 600, color: "#21241E", lineHeight: 1.4 }}>{item.title}</div>
+      </div>
+      <div style={{ fontSize: 13, color: "#3D3D35", lineHeight: 1.6, marginLeft: 16 }}>{item.body}</div>
+      {item.footnote && (
+        <div style={{ fontSize: 11, color: "#8A8270", lineHeight: 1.5, marginTop: 6, marginLeft: 16, fontStyle: "italic" }}>{item.footnote}</div>
+      )}
+    </div>
+  );
+}
+
+function ActionPlanScreen({ data }) {
+  const aT = deriveAssetTotals(data.assetItems);
+  const ssData = applyMaxedSS({ ...data, ...aT });
+  const derivedData = { ...ssData, ...aT };
+  const engine = runEngine(derivedData);
+  const items = generatePlanItems(derivedData, engine);
+
+  const grouped = Object.keys(PLAN_CATEGORIES).reduce((acc, key) => {
+    acc[key] = items.filter(it => it.category === key);
+    return acc;
+  }, {});
+
+  const m  = engine?.metrics;
+  const mc = engine?.monteCarlo;
+  const ht = engine?.householdTax;
+
+  const summaryCards = [
+    m?.fireNumber       && { label: "FIRE number",          value: currency(m.fireNumber) },
+    m?.projectedSuper   && { label: "Projected super",      value: currency(m.projectedSuper) },
+    ht?.totalHouseholdTax > 0 && { label: "Est. annual tax", value: currency(ht.totalHouseholdTax) },
+    mc?.successRate != null   && { label: "Monte Carlo",     value: mc.successRate + "% success" },
+  ].filter(Boolean);
+
+  return (
+    <div>
+      {summaryCards.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 24 }}>
+          {summaryCards.map((c, i) => (
+            <div key={i} style={{ background: "white", border: "1px solid #ECE7DB", borderRadius: 10, padding: "12px 14px" }}>
+              <div style={{ fontSize: 10, color: "#8A8270", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>{c.label}</div>
+              <div style={{ fontFamily: "Spectral, serif", fontSize: 18, color: "#2E4A3D", fontWeight: 500 }}>{c.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ fontSize: 12, color: "#8A8270", lineHeight: 1.6, background: "#F5F2EB", borderRadius: 8, padding: "10px 14px", marginBottom: 20 }}>
+        The observations below are derived from your inputs and the modelling engine. They present calculations and factual notes — not personal financial advice. For decisions affecting your financial position, consult a licensed Australian financial adviser (AFSL holder).
+      </div>
+
+      {Object.entries(PLAN_CATEGORIES).map(([key, cat]) => {
+        const catItems = grouped[key] || [];
+        if (catItems.length === 0) return null;
+        return (
+          <div key={key} style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <span style={{ fontSize: 14 }}>{cat.icon}</span>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.09em", textTransform: "uppercase", color: "#6B6655" }}>
+                {cat.label}
+              </div>
+            </div>
+            {catItems.map(item => <PlanItem key={item.id} item={item} />)}
+          </div>
+        );
+      })}
+
+      <div style={{ marginTop: 8, background: "#F5F2EB", border: "1px solid #ECE7DB", borderRadius: 10, padding: "16px 18px" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6B6655", marginBottom: 10 }}>
+          Topics to explore with a financial adviser
+        </div>
+        {[
+          "Super contribution strategies, including salary sacrifice, carry-forward, and spouse contributions",
+          "Insurance — life, income protection, TPD, and trauma cover inside and outside super",
+          "Tax-effective investment structuring, including trust structures and ownership allocation",
+          "Debt management strategies, including debt recycling where applicable",
+          "Estate planning — will, enduring power of attorney, and superannuation death benefit nominations",
+          "Age Pension eligibility optimisation and interaction with super drawdown",
+        ].map((pt, i) => (
+          <div key={i} style={{ display: "flex", gap: 10, marginBottom: 8 }}>
+            <div style={{ color: "#9DB0A1", fontWeight: 700, fontSize: 13, flexShrink: 0, marginTop: 1 }}>→</div>
+            <div style={{ fontSize: 13, color: "#6B6655", lineHeight: 1.5 }}>{pt}</div>
+          </div>
+        ))}
+        <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid #D8D2C4", fontSize: 11, color: "#8A8270", lineHeight: 1.5 }}>
+          These are general topics for educational purposes only. Nothing in this summary constitutes personal financial advice. For tailored advice, engage a licensed Australian financial adviser (AFSL holder).
+        </div>
+      </div>
+
+      <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
+        <button onClick={() => window.print()} style={{
+          padding: "10px 20px", border: "none", borderRadius: 10,
+          background: "#C2A06B", color: "#2A2113", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+        }}>Print / Save PDF</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── MAIN APP ─────────────────────────────────────────────────────────────────
 
 export default function ClearpathMVP() {
@@ -2227,10 +2341,10 @@ export default function ClearpathMVP() {
     setTimeout(() => { if (scrollRef.current) scrollRef.current.scrollTop = 0; }, 50);
   }
 
-  function next() { goTo(Math.min(stage + 1, 6)); }
+  function next() { goTo(Math.min(stage + 1, 7)); }
   function back() { goTo(Math.max(stage - 1, 1)); }
 
-  const progress = ((stage - 1) / 5) * 100;
+  const progress = ((stage - 1) / 6) * 100;
   const currentStage = STAGES[stage - 1];
 
   const allIPs = data.investmentProperties || [];
@@ -2333,7 +2447,7 @@ export default function ClearpathMVP() {
       <div style={{ flex: 1, display: "flex", justifyContent: "center", padding: "32px 20px 100px" }}>
         <div style={{ width: "100%", maxWidth: 620 }}>
           <div style={{ marginBottom: 28, animation: "fadeIn 0.3s ease" }}>
-            <div style={{ fontSize: 11, color: "#8A8270", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Step {stage} of 6</div>
+            <div style={{ fontSize: 11, color: "#8A8270", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Step {stage} of 7</div>
             <div style={{ fontFamily: "Spectral, serif", fontSize: 28, color: "#21241E", marginBottom: 4 }}>{currentStage.title}</div>
             <div style={{ fontSize: 14, color: "#6B6655" }}>{currentStage.subtitle}</div>
           </div>
@@ -2345,6 +2459,7 @@ export default function ClearpathMVP() {
             {stage === 4 && <Stage4 data={data} set={set} />}
             {stage === 5 && <Stage5 data={data} set={set} />}
             {stage === 6 && <AnalysisScreen data={data} set={set} />}
+            {stage === 7 && <ActionPlanScreen data={data} />}
           </div>
 
           {stage < 6 && (
@@ -2359,8 +2474,15 @@ export default function ClearpathMVP() {
           )}
 
           {stage === 6 && (
-            <div style={{ marginTop: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
               <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #D8D2C4", borderRadius: 12, background: "#FBFAF6", fontSize: 14, color: "#6B6655", cursor: "pointer", fontFamily: "inherit" }}>← Edit my details</button>
+              <button onClick={next} style={{ padding: "12px 28px", border: "none", borderRadius: 12, background: "#C2A06B", color: "#2A2113", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 12px rgba(194,160,107,0.3)" }}>View Plan Summary →</button>
+            </div>
+          )}
+
+          {stage === 7 && (
+            <div style={{ marginTop: 20 }}>
+              <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #D8D2C4", borderRadius: 12, background: "#FBFAF6", fontSize: 14, color: "#6B6655", cursor: "pointer", fontFamily: "inherit" }}>← Back to Analysis</button>
             </div>
           )}
         </div>

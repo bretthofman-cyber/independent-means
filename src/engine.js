@@ -10,8 +10,8 @@
  *     — it is implicitly lower than after-tax returns and the user can adjust the return rate).
  *   • Age Pension estimates use current rules and ignore future policy changes.
  *   • HECS debt does not index in projections (indexation paused/capped; conservative approach).
- *   • Carry-forward concessional contributions are not modelled.
- *   • CGT events on property sale are not modelled.
+ *   • Carry-forward concessional cap raises effective cap in current year only; future years use standard cap.
+ *   • CGT on IP sale uses a flat 30% marginal rate estimate; actual rate depends on total income in sale year.
  */
 
 import {
