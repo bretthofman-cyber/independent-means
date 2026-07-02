@@ -114,7 +114,7 @@ function annualTax(grossIncome) {
 export function estimateNetMonthly(data) {
   const n = v => parseFloat(String(v || "").replace(/,/g, "")) || 0;
   const g1 = Math.max(0, n(data.grossIncome) - n(data.salarySacrifice));
-  const g2 = data.hasPartner === "yes" ? n(data.partnerIncome) : 0;
+  const g2 = data.hasPartner === "yes" ? Math.max(0, n(data.partnerIncome) - n(data.partnerSalarySacrifice)) : 0;
   const net1 = g1 - annualTax(g1);
   const net2 = g2 - annualTax(g2);
   const bonus1 = (n(data.bonusIncome) + n(data.otherIncome)) * 0.75;
@@ -178,21 +178,23 @@ function newItem(categoryKey, label, amount = "", frequency = "monthly", month =
 
 // ─── CASHFLOW SUMMARY ─────────────────────────────────────────────────────────
 
-function CashflowSummary({ netMonthly, expenses, savings, surplus }) {
+function CashflowSummary({ netMonthly, expenses, savings, otherMonthly = 0, surplus }) {
   const isPos = surplus >= 0;
   const color = isPos ? "#2E4A3D" : "#9a3922";
   const bg    = isPos ? "#EAF0EC" : "#fdf4f0";
   const bdr   = isPos ? "#D8D2C4" : "#f0d0c4";
+  const rows = [
+    { label: "Est. take-home income",       val: netMonthly,   sign: "+" },
+    { label: "Monthly budget",              val: expenses,     sign: "−" },
+    ...(otherMonthly > 0 ? [{ label: "Annual & irregular (avg/mo)", val: otherMonthly, sign: "−" }] : []),
+    { label: "Planned savings",             val: savings,      sign: "−" },
+  ];
   return (
     <div style={{ background: bg, border: `1.5px solid ${bdr}`, borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
       <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8270", marginBottom: 10 }}>
         Monthly Cashflow
       </div>
-      {[
-        { label: "Est. take-home income", val: netMonthly, sign: "+" },
-        { label: "Monthly budget",        val: expenses,   sign: "−" },
-        { label: "Planned savings",       val: savings,    sign: "−" },
-      ].map(({ label, val, sign }, i) => (
+      {rows.map(({ label, val, sign }, i) => (
         <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
           <span style={{ fontSize: 12, color: "#6B6655" }}>{label}</span>
           <span style={{ fontSize: 12, fontWeight: 500, color: sign === "+" ? "#2E4A3D" : "#6B6655" }}>
@@ -277,6 +279,7 @@ export function CashflowCalendar({ items, netMonthly, startingCash = 0, compact 
 
   // ── FULL TABLE: shown in Stage 7 Analysis ─────────────────────────────────
   const minCash = startingCash > 0 ? Math.min(...rows.map(r => r.cumulative)) : null;
+  const cashDips = minCash !== null && minCash < startingCash;
   const thStyle = { fontSize: 11, fontWeight: 600, color: "#8A8270", padding: "7px 10px", textAlign: "right", background: "#F5F2EB", borderBottom: "1.5px solid #ECE7DB" };
 
   return (
@@ -312,7 +315,7 @@ export function CashflowCalendar({ items, netMonthly, startingCash = 0, compact 
                 const isNeg    = row.net < 0;
                 const isTight  = !isNeg && netMonthly > 0 && row.net < netMonthly * 0.3;
                 const rowBg    = isNeg ? "#fdf4f0" : isTight ? "#fffdf5" : idx % 2 === 0 ? "white" : "#FBFAF6";
-                const isLowest = minCash !== null && row.cumulative === minCash;
+                const isLowest = cashDips && row.cumulative === minCash;
                 const tdBase   = { padding: "8px 10px", borderBottom: "1px solid #F5F2EB", fontSize: 12 };
                 return (
                   <tr key={row.name} style={{ background: rowBg }}>
@@ -846,10 +849,11 @@ export default function Stage2({ data, setMany }) {
     setMany({ budgetItems: updated, monthlyExpenses: String(Math.round(total)) });
   }
 
-  const netMonthly = estimateNetMonthly(data);
-  const expenses   = bTotal > 0 ? bTotal : n(data.monthlyExpenses);
-  const savings    = n(data.savingsPerMonth);
-  const surplus    = netMonthly - expenses - savings;
+  const netMonthly   = estimateNetMonthly(data);
+  const expenses     = bTotal > 0 ? bTotal : n(data.monthlyExpenses);
+  const savings      = n(data.savingsPerMonth);
+  const otherMonthly = (n(data.annualIrregular) + n(data.insuranceAnnualPremium)) / 12;
+  const surplus      = netMonthly - expenses - savings - otherMonthly;
 
   const partner = data.partnerName || "Partner";
   const isCouple = data.hasPartner === "yes";
@@ -914,7 +918,7 @@ export default function Stage2({ data, setMany }) {
       </div>
 
       {netMonthly > 0 && (bTotal > 0 || expenses > 0) && (
-        <CashflowSummary netMonthly={netMonthly} expenses={expenses} savings={savings} surplus={surplus} />
+        <CashflowSummary netMonthly={netMonthly} expenses={expenses} savings={savings} otherMonthly={otherMonthly} surplus={surplus} />
       )}
 
       {/* Compact cashflow calendar preview — prompts month-setting or shows chip row */}

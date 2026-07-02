@@ -1405,26 +1405,44 @@ function NetWorthChart({ engine, data }) {
 
   const retirementAge = parseInt(data.retirementAge) || 65;
   const lifeExp       = parseInt(data.lifeExpectancy) || 90;
-  const W = 600, H = 200;
-  const mg = { top: 20, right: 20, bottom: 28, left: 70 };
+  const W = 600, H = 220;
+  const mg = { top: 24, right: 20, bottom: 30, left: 70 };
   const cW = W - mg.left - mg.right;
   const cH = H - mg.top - mg.bottom;
 
-  const nws    = trajectory.map(t => t.netWorth);
   const minAge = trajectory[0].age;
   const maxAge = trajectory[trajectory.length - 1].age;
-  const rawMin = Math.min(0, ...nws);
-  const rawMax = Math.max(...nws);
+
+  // All series
+  const nws   = trajectory.map(t => t.netWorth);
+  const sups  = trajectory.map(t => t.superBalance   || 0);
+  const liqs  = trajectory.map(t => t.liquidAssets   || 0);
+  const props = trajectory.map(t => t.propertyValue  || 0);
+
+  // Show a series only if it's non-trivially non-zero
+  const hasSuper = Math.max(...sups) > 1000;
+  const hasLiq   = Math.max(...liqs) > 1000;
+  const hasProp  = Math.max(...props) > 1000;
+
+  // Y-scale covers all visible series
+  const allVals = [...nws, ...(hasSuper ? sups : []), ...(hasLiq ? liqs : []), ...(hasProp ? props : [])];
+  const rawMin = Math.min(0, ...allVals);
+  const rawMax = Math.max(...allVals);
   const range  = rawMax - rawMin || 1;
 
   const xS = age => mg.left + ((age - minAge) / (maxAge - minAge)) * cW;
-  const yS = nw  => mg.top  + cH - ((nw - rawMin) / range) * cH;
+  const yS = v   => mg.top  + cH - ((v - rawMin) / range) * cH;
 
-  const linePath = trajectory.map((t, i) =>
-    `${i === 0 ? "M" : "L"} ${xS(t.age).toFixed(1)} ${yS(t.netWorth).toFixed(1)}`
+  const mkPath = key => trajectory.map((t, i) =>
+    `${i === 0 ? "M" : "L"} ${xS(t.age).toFixed(1)} ${yS(t[key] || 0).toFixed(1)}`
   ).join(" ");
 
-  const areaPath =
+  const nwPath    = mkPath("netWorth");
+  const superPath = mkPath("superBalance");
+  const liqPath   = mkPath("liquidAssets");
+  const propPath  = mkPath("propertyValue");
+
+  const nwAreaPath =
     `M ${xS(minAge).toFixed(1)} ${yS(0).toFixed(1)} ` +
     trajectory.map(t => `L ${xS(t.age).toFixed(1)} ${yS(t.netWorth).toFixed(1)}`).join(" ") +
     ` L ${xS(maxAge).toFixed(1)} ${yS(0).toFixed(1)} Z`;
@@ -1437,13 +1455,37 @@ function NetWorthChart({ engine, data }) {
   };
 
   const yTicks = [0, 1, 2, 3, 4].map(i => ({
-    nw: rawMin + (range / 4) * i,
-    y:  yS(rawMin + (range / 4) * i),
+    v: rawMin + (range / 4) * i,
+    y: yS(rawMin + (range / 4) * i),
   }));
+
+  // X-axis: current age + every 10 yrs + retirement + life expectancy
+  const decadeAges = [];
+  const firstDecade = Math.ceil(minAge / 10) * 10;
+  for (let a = firstDecade; a <= maxAge; a += 10) {
+    if (Math.abs(a - retirementAge) > 2 && Math.abs(a - minAge) > 2 && Math.abs(a - maxAge) > 2) {
+      decadeAges.push(a);
+    }
+  }
+  const xAxisAges = [minAge, ...decadeAges, retirementAge, maxAge]
+    .filter((a, idx, arr) => arr.indexOf(a) === idx && a >= minAge && a <= maxAge)
+    .sort((a, b) => a - b);
 
   const retX     = xS(retirementAge);
   const retPoint = trajectory.find(t => t.age === retirementAge);
   const endPoint = trajectory[trajectory.length - 1];
+  const startPoint = trajectory[0];
+
+  // Life events (years where any event fires)
+  const eventPoints = trajectory.filter(t => t.eventTypes && t.eventTypes.length > 0);
+
+  // Legend entries
+  const legend = [
+    { label: "Net worth", color: "var(--chart-networth)", dash: null, width: 2.5 },
+    ...(hasSuper ? [{ label: "Super",    color: "#4472a8", dash: "3 2", width: 1.5 }] : []),
+    ...(hasProp  ? [{ label: "Property", color: "#C2A06B", dash: "5 3", width: 1.5 }] : []),
+    ...(hasLiq   ? [{ label: "Liquid",   color: "#9DB0A1", dash: "2 2", width: 1.5 }] : []),
+  ];
 
   return (
     <div style={{ background: "#FBFAF6", border: "1.5px solid #ECE7DB", borderRadius: 12, padding: "16px 16px 12px", marginBottom: 20 }}>
@@ -1453,7 +1495,7 @@ function NetWorthChart({ engine, data }) {
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block", overflow: "visible" }}>
         <defs>
           <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%"   stopColor="var(--chart-networth)" stopOpacity="0.16" />
+            <stop offset="0%"   stopColor="var(--chart-networth)" stopOpacity="0.12" />
             <stop offset="100%" stopColor="var(--chart-networth)" stopOpacity="0.00" />
           </linearGradient>
           <clipPath id="nwClip">
@@ -1461,30 +1503,40 @@ function NetWorthChart({ engine, data }) {
           </clipPath>
         </defs>
 
-        {yTicks.map(({ nw, y }, i) => (
+        {/* Grid + Y labels */}
+        {yTicks.map(({ v, y }, i) => (
           <g key={i}>
             <line x1={mg.left} x2={W - mg.right} y1={y} y2={y}
               stroke={i === 0 ? "var(--chart-baseline)" : "var(--chart-gridline)"}
               strokeWidth={i === 0 ? 1.5 : 1} />
             <text x={mg.left - 6} y={y + 3.5} textAnchor="end" fontSize="9.5"
-              fill="var(--chart-axis-label)">{fmt(nw)}</text>
+              fill="var(--chart-axis-label)">{fmt(v)}</text>
           </g>
         ))}
 
+        {/* Retirement marker */}
         <line x1={retX} x2={retX} y1={mg.top} y2={mg.top + cH}
           stroke="var(--event-retire)" strokeWidth="1.5" strokeDasharray="4 3" opacity="0.4" />
         <text x={retX + 5} y={mg.top + 12} fontSize="9"
-          fill="var(--event-retire)" opacity="0.65">
-          Retire {retirementAge}
-        </text>
+          fill="var(--event-retire)" opacity="0.65">Retire {retirementAge}</text>
 
+        {/* Series paths */}
         <g clipPath="url(#nwClip)">
-          <path d={areaPath} fill="url(#nwGrad)" />
-          <path d={linePath} fill="none" stroke="var(--chart-networth)" strokeWidth="2.5"
+          <path d={nwAreaPath} fill="url(#nwGrad)" />
+          {hasProp  && <path d={propPath}  fill="none" stroke="#C2A06B" strokeWidth="1.5" strokeDasharray="5 3" strokeLinecap="round" strokeLinejoin="round" opacity="0.75" />}
+          {hasSuper && <path d={superPath} fill="none" stroke="#4472a8" strokeWidth="1.5" strokeDasharray="3 2" strokeLinecap="round" strokeLinejoin="round" opacity="0.8"  />}
+          {hasLiq   && <path d={liqPath}   fill="none" stroke="#9DB0A1" strokeWidth="1.5" strokeDasharray="2 2" strokeLinecap="round" strokeLinejoin="round" opacity="0.7"  />}
+          <path d={nwPath} fill="none" stroke="var(--chart-networth)" strokeWidth="2.5"
             strokeLinecap="round" strokeLinejoin="round" />
+          {/* Life event markers on the net worth line */}
+          {eventPoints.map(t => (
+            <circle key={t.age} cx={xS(t.age)} cy={yS(t.netWorth)} r="3.5"
+              fill="var(--chart-goal-line)" stroke="white" strokeWidth="1.5" opacity="0.85" />
+          ))}
         </g>
 
-        <circle cx={xS(minAge)} cy={yS(trajectory[0].netWorth)} r="3.5"
+        {/* Key point dots */}
+        <circle cx={xS(minAge)} cy={yS(startPoint.netWorth)} r="3.5"
           fill="var(--event-ring)" stroke="var(--chart-networth)" strokeWidth="2" />
         {retPoint && (
           <circle cx={retX} cy={yS(retPoint.netWorth)} r="4"
@@ -1493,15 +1545,40 @@ function NetWorthChart({ engine, data }) {
         <circle cx={xS(maxAge)} cy={yS(endPoint.netWorth)} r="3.5"
           fill="var(--event-ring)" stroke="var(--chart-networth)" strokeWidth="2" />
 
-        {[minAge, retirementAge, maxAge].map((age, i) => (
-          <text key={i} x={xS(age)} y={H - 4} textAnchor="middle" fontSize="9.5"
+        {/* X-axis age labels */}
+        {xAxisAges.map(age => (
+          <text key={age} x={xS(age)} y={H - 4} textAnchor="middle" fontSize="9"
             fill="var(--chart-axis-label)">
-            Age {age}
+            {age === minAge || age === retirementAge || age === maxAge ? `Age ${age}` : age}
           </text>
         ))}
       </svg>
-      <div style={{ display: "flex", gap: 24, fontSize: 11, color: "#8A8270", marginTop: 6, flexWrap: "wrap" }}>
-        <span>Today: <strong style={{ color: "#21241E", fontFamily: "Spectral, serif", fontSize: 13 }}>{currency(trajectory[0].netWorth)}</strong></span>
+
+      {/* Legend */}
+      <div style={{ display: "flex", gap: 14, flexWrap: "wrap", alignItems: "center", marginTop: 6, marginBottom: 8 }}>
+        {legend.map(l => (
+          <span key={l.label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "#6B6655" }}>
+            <svg width="22" height="6" style={{ flexShrink: 0 }}>
+              <line x1="0" y1="3" x2="22" y2="3"
+                stroke={l.color} strokeWidth={l.width}
+                strokeDasharray={l.dash || undefined} />
+            </svg>
+            {l.label}
+          </span>
+        ))}
+        {eventPoints.length > 0 && (
+          <span style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 10, color: "#6B6655" }}>
+            <svg width="10" height="10" style={{ flexShrink: 0 }}>
+              <circle cx="5" cy="5" r="3.5" fill="var(--chart-goal-line)" stroke="white" strokeWidth="1.5" />
+            </svg>
+            Life event
+          </span>
+        )}
+      </div>
+
+      {/* Stats row */}
+      <div style={{ display: "flex", gap: 20, fontSize: 11, color: "#8A8270", flexWrap: "wrap", borderTop: "1px solid #ECE7DB", paddingTop: 8 }}>
+        <span>Today: <strong style={{ color: "#21241E", fontFamily: "Spectral, serif", fontSize: 13 }}>{currency(startPoint.netWorth)}</strong></span>
         {retPoint && (
           <span>At retirement: <strong style={{ color: "#21241E", fontFamily: "Spectral, serif", fontSize: 13 }}>{currency(retPoint.netWorth)}</strong></span>
         )}
@@ -1537,16 +1614,17 @@ function ScenarioComparisonRow({ data }) {
             <div key={key} style={{
               background: isActive ? bg : "#FBFAF6",
               border: `1.5px solid ${isActive ? bdr : "#ECE7DB"}`,
-              borderRadius: 12, padding: "14px 14px", position: "relative",
+              borderRadius: 12, padding: "14px 14px",
             }}>
-              {isActive && (
-                <div style={{
-                  position: "absolute", top: 10, right: 10,
-                  fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
-                  color, background: `${color}18`, padding: "2px 7px", borderRadius: 10,
-                }}>Active</div>
-              )}
-              <div style={{ fontSize: 11, fontWeight: 700, color, marginBottom: 12 }}>{label}</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4, marginBottom: 12 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color }}>{label}</div>
+                {isActive && (
+                  <div style={{
+                    fontSize: 9, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase",
+                    color, background: `${color}18`, padding: "2px 7px", borderRadius: 10, flexShrink: 0,
+                  }}>Active</div>
+                )}
+              </div>
               <div style={{ marginBottom: 10 }}>
                 <div style={{ fontSize: 9, color: "#8A8270", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>Super at retirement</div>
                 <div style={{ fontSize: 17, fontFamily: "Spectral, serif", color: "#21241E" }}>
@@ -1616,7 +1694,8 @@ function AnalysisSummary({ data, engine }) {
   const budgetItems = data.budgetItems || [];
   const totalExpenses = budgetTotal(budgetItems) || n(data.monthlyExpenses);
   const savings = n(data.savingsPerMonth);
-  const monthlySurplus = netMonthly - totalExpenses - savings;
+  const otherMonthly = (n(data.annualIrregular) + n(data.insuranceAnnualPremium)) / 12;
+  const monthlySurplus = netMonthly - totalExpenses - savings - otherMonthly;
   const calRows = budgetItems.length > 0 && netMonthly > 0
     ? buildCashflowCalendar(budgetItems, netMonthly, aT.cashSavings) : [];
   const tightMonths = calRows.filter(r => r.net < 0 || (r.annual > 0 && r.net < netMonthly * 0.3));
@@ -1662,9 +1741,10 @@ function AnalysisSummary({ data, engine }) {
     const parts = [];
     let cf = `Estimated take-home income is ${currency(netMonthly)}/month after FY2026-27 tax${couple ? " across both incomes" : ""}.`;
     if (totalExpenses > 0) {
+      const totalSpending = totalExpenses + otherMonthly;
       const surplusText = monthlySurplus >= 0
         ? `a ${currency(monthlySurplus)}/month surplus` : `a ${currency(Math.abs(monthlySurplus))}/month shortfall`;
-      cf += ` After ${currency(totalExpenses)}/month in spending${savings > 0 ? ` and ${currency(savings)}/month in savings` : ""}, the budget runs ${surplusText}.`;
+      cf += ` After ${currency(totalSpending)}/month in spending${savings > 0 ? ` and ${currency(savings)}/month in savings` : ""}, the budget runs ${surplusText}.`;
     }
     parts.push(cf);
     if (tightMonths.length > 0) {
@@ -2303,7 +2383,7 @@ function ActionPlanScreen({ data }) {
         </div>
       </div>
 
-      <div style={{ marginTop: 20, display: "flex", gap: 10 }}>
+      <div className="no-print" style={{ marginTop: 20, display: "flex", gap: 10 }}>
         <button onClick={() => window.print()} style={{
           padding: "10px 20px", border: "none", borderRadius: 10,
           background: "#C2A06B", color: "#2A2113", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
@@ -2389,9 +2469,15 @@ export default function ClearpathMVP() {
   --tooltip-text:#21241E; --tooltip-label:#6B6655;
 
   --pine-100:#2E4A3D; --pine-70:#5A7264; --pine-40:#97A89B; --pine-20:#C8D1C9;
+}
+@media print {
+  .no-print { display: none !important; }
+  body, html { background: white !important; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page { margin: 12mm 10mm; size: A4 portrait; }
 }`}</style>
 
-      <header style={{ background: "#FBFAF6", borderBottom: "1px solid #ECE7DB", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100 }}>
+      <header className="no-print" style={{ background: "#FBFAF6", borderBottom: "1px solid #ECE7DB", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", position: "sticky", top: 0, zIndex: 100 }}>
         <div>
           <div style={{ fontFamily: "Spectral, serif", fontSize: 20, color: "#21241E" }}>
             Clear<span style={{ color: "#2E4A3D" }}>path</span>
@@ -2407,7 +2493,7 @@ export default function ClearpathMVP() {
         </div>
       </header>
 
-      <div style={{ background: "white", borderBottom: "1px solid #ECE7DB", padding: "0 28px 14px" }}>
+      <div className="no-print" style={{ background: "white", borderBottom: "1px solid #ECE7DB", padding: "0 28px 14px" }}>
         <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
           {STAGES.map(s => (
             <button key={s.id} onClick={() => s.id < stage ? goTo(s.id) : null}
@@ -2428,7 +2514,7 @@ export default function ClearpathMVP() {
       </div>
 
       {(data.grossIncome || data.superBalance || (data.assetItems || []).length > 0) && (
-        <div style={{ background: "#2E4A3D", padding: "10px 28px", display: "flex", gap: 24, overflowX: "auto" }}>
+        <div className="no-print" style={{ background: "#2E4A3D", padding: "10px 28px", display: "flex", gap: 24, overflowX: "auto" }}>
           {[
             { label: "Net Worth", value: currency(netWorth) },
             { label: "Super", value: currency(data.superBalance) },
@@ -2446,7 +2532,7 @@ export default function ClearpathMVP() {
 
       <div style={{ flex: 1, display: "flex", justifyContent: "center", padding: "32px 20px 100px" }}>
         <div style={{ width: "100%", maxWidth: 620 }}>
-          <div style={{ marginBottom: 28, animation: "fadeIn 0.3s ease" }}>
+          <div className="no-print" style={{ marginBottom: 28, animation: "fadeIn 0.3s ease" }}>
             <div style={{ fontSize: 11, color: "#8A8270", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Step {stage} of 7</div>
             <div style={{ fontFamily: "Spectral, serif", fontSize: 28, color: "#21241E", marginBottom: 4 }}>{currentStage.title}</div>
             <div style={{ fontSize: 14, color: "#6B6655" }}>{currentStage.subtitle}</div>
@@ -2463,7 +2549,7 @@ export default function ClearpathMVP() {
           </div>
 
           {stage < 6 && (
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+            <div className="no-print" style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
               {stage > 1 ? (
                 <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #D8D2C4", borderRadius: 12, background: "#FBFAF6", fontSize: 14, color: "#6B6655", cursor: "pointer", fontFamily: "inherit" }}>← Back</button>
               ) : <div />}
@@ -2474,21 +2560,21 @@ export default function ClearpathMVP() {
           )}
 
           {stage === 6 && (
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
+            <div className="no-print" style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
               <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #D8D2C4", borderRadius: 12, background: "#FBFAF6", fontSize: 14, color: "#6B6655", cursor: "pointer", fontFamily: "inherit" }}>← Edit my details</button>
               <button onClick={next} style={{ padding: "12px 28px", border: "none", borderRadius: 12, background: "#C2A06B", color: "#2A2113", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 12px rgba(194,160,107,0.3)" }}>View Plan Summary →</button>
             </div>
           )}
 
           {stage === 7 && (
-            <div style={{ marginTop: 20 }}>
+            <div className="no-print" style={{ marginTop: 20 }}>
               <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #D8D2C4", borderRadius: 12, background: "#FBFAF6", fontSize: 14, color: "#6B6655", cursor: "pointer", fontFamily: "inherit" }}>← Back to Analysis</button>
             </div>
           )}
         </div>
       </div>
 
-      <footer style={{ background: "white", borderTop: "1px solid #ECE7DB", padding: "16px 28px", textAlign: "center", marginTop: "auto" }}>
+      <footer className="no-print" style={{ background: "white", borderTop: "1px solid #ECE7DB", padding: "16px 28px", textAlign: "center", marginTop: "auto" }}>
         <div style={{ fontSize: 11, color: "#8A8270", lineHeight: 1.6, maxWidth: 620, margin: "0 auto" }}>
           <strong style={{ color: "#6B6655" }}>General information only.</strong> Clearpath is an educational planning tool and does not provide personal financial advice. All projections and analysis are illustrative estimates based on the information you enter. Before making financial decisions, consider seeking advice from a licensed Australian financial adviser (AFSL holder). Past performance is not a reliable indicator of future performance.
         </div>
