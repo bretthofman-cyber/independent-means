@@ -2534,7 +2534,7 @@ We may update these Terms from time to time. Continued use of the Service after 
 These Terms are governed by the laws of Victoria, Australia. Any disputes will be subject to the exclusive jurisdiction of the courts of Victoria.
 
 12. CONTACT
-For questions about these Terms, contact: brett.hofman@gmail.com`;
+For questions about these Terms, contact: hello@independentmeans.com.au`;
 
 const PRIVACY_CONTENT = `Last updated: 8 July 2026
 
@@ -2577,11 +2577,11 @@ The Service is not directed at persons under 18. We do not knowingly collect inf
 We may update this Privacy Policy from time to time. We will notify you of material changes by posting the updated policy in the Service.
 
 9. COMPLAINTS
-If you have a privacy concern, contact us at brett.hofman@gmail.com. If your concern is not resolved, you may contact the Office of the Australian Information Commissioner (OAIC) at oaic.gov.au.
+If you have a privacy concern, contact us at hello@independentmeans.com.au. If your concern is not resolved, you may contact the Office of the Australian Information Commissioner (OAIC) at oaic.gov.au.
 
 10. CONTACT
 Independent Means
-Email: brett.hofman@gmail.com`;
+Email: hello@independentmeans.com.au`;
 
 function LegalModal({ title, content, onClose }) {
   return (
