@@ -254,6 +254,17 @@ export function generateWarnings(data, engine) {
     );
   }
 
+  // TTR opportunity
+  const ttr = engine.ttr;
+  if (ttr?.eligible && !ttr?.capAlreadyMaxed && ttr.annualTaxBenefit > 500) {
+    const fmt2 = v => "$" + Math.round(v).toLocaleString();
+    add("info", "TTR_OPPORTUNITY",
+      "Transition to Retirement (TTR) strategy available",
+      `At age ${ttr.currentAge} you are past preservation age (60) and still working. A TTR strategy could allow an additional ${fmt2(ttr.effectiveAdditionalSS)}/yr in salary sacrifice — saving an estimated ${fmt2(ttr.annualTaxBenefit)}/yr in income tax (${Math.round(ttr.marginalRate * 100)}% marginal rate vs 15% contributions tax). A TTR pension drawn from your super can offset the reduction in take-home pay. Over ${ttr.yearsOfTTR} years to retirement this could add approximately ${fmt2(ttr.cumulativeTaxBenefit)} in cumulative tax savings.`,
+      "TTR pensions are tax-free after age 60. The drawdown must be between 4% and 10% of the account balance each year. This is general information only — TTR structuring involves your specific fund's rules and your personal tax position. Consult a licensed financial adviser (AFSL holder) before implementing."
+    );
+  }
+
   // Debt recycling
   if ((data.debtRecycling === true || data.debtRecycling === "true") && p(data.mortgageBalance) > 0) {
     const mortgageRate = p(data.mortgageRate);

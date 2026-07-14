@@ -1,7 +1,7 @@
 // ─── CLEARPATH — STAGE 2: INCOME & CASHFLOW (ITEM-LEVEL BUDGET) ──────────────
 
 import { useState, useRef, useEffect } from "react";
-import { currency, Field, Input, TwoCol, SectionDivider } from "./ui.jsx";
+import { currency, Field, Input, Toggle, TwoCol, SectionDivider } from "./ui.jsx";
 
 // ─── CATEGORIES ──────────────────────────────────────────────────────────────
 
@@ -852,7 +852,10 @@ export default function Stage2({ data, setMany }) {
   const netMonthly   = estimateNetMonthly(data);
   const expenses     = bTotal > 0 ? bTotal : n(data.monthlyExpenses);
   const savings      = n(data.savingsPerMonth);
-  const otherMonthly = (n(data.annualIrregular) + n(data.insuranceAnnualPremium)) / 12;
+  // Include outside-super insurance premiums in monthly cashflow drain
+  const outsideInsurance = (n(data.insurancePremium) > 0 && data.insuranceInSuper !== "yes" ? n(data.insurancePremium) : 0)
+    + (n(data.partnerInsurancePremium) > 0 && data.partnerInsuranceInSuper !== "yes" ? n(data.partnerInsurancePremium) : 0);
+  const otherMonthly = (n(data.annualIrregular) + outsideInsurance) / 12;
   const surplus      = netMonthly - expenses - savings - otherMonthly;
 
   const partner = data.partnerName || "Partner";
@@ -935,9 +938,94 @@ export default function Stage2({ data, setMany }) {
           <Input value={data.savingsPerMonth} onChange={v => setMany({ savingsPerMonth: v })} placeholder="1,200" prefix="$" />
         </Field>
       </TwoCol>
-      <Field label="Life / TPD insurance annual premium" hint="Total household premium — enter 0 if fully inside super at no out-of-pocket cost">
-        <Input value={data.insuranceAnnualPremium} onChange={v => setMany({ insuranceAnnualPremium: v })} placeholder="0" prefix="$" />
+
+      <SectionDivider label="Life & disability insurance" />
+      <Field label={`${isCouple ? "Your " : ""}life / TPD insurance — annual premium (outside super)`} hint="Out-of-pocket cost paid from take-home pay — enter 0 if held fully inside super">
+        <Input
+          value={data.insurancePremium || ""}
+          onChange={v => setMany({ insurancePremium: v, insuranceInSuper: "no" })}
+          placeholder="0"
+          prefix="$"
+        />
       </Field>
+      {(() => {
+        const val = parseFloat(String(data.insurancePremium || "").replace(/,/g, "")) || 0;
+        if (val <= 0) return null;
+        if (data.insuranceInSuper === "yes") {
+          return (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#FBF8F2", border: "1px solid #E4D8BC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#6B5830", lineHeight: 1.5 }}>
+              <span style={{ flexShrink: 0, marginTop: 1 }}>⚠</span>
+              <span>
+                This premium is currently set to <strong>inside super</strong> in Super &amp; Goals (Stage 5) — it won't appear as a cashflow expense here. Editing the amount above will switch it to outside super.
+              </span>
+            </div>
+          );
+        }
+        return (
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#2E4A3D", lineHeight: 1.5 }}>
+            <span style={{ flexShrink: 0, marginTop: 1 }}>↗</span>
+            <span>
+              Synced to <strong>Super &amp; Goals (Stage 5)</strong> — the same amount appears there as an outside-super premium. Update it in either place.
+            </span>
+          </div>
+        );
+      })()}
+
+      {isCouple && (
+        <>
+          <Field label={`${data.partnerName || "Partner"}'s life / TPD insurance — annual premium (outside super)`} hint="Out-of-pocket cost paid from take-home pay">
+            <Input
+              value={data.partnerInsurancePremium || ""}
+              onChange={v => setMany({ partnerInsurancePremium: v, partnerInsuranceInSuper: "no" })}
+              placeholder="0"
+              prefix="$"
+            />
+          </Field>
+          {(() => {
+            const val = parseFloat(String(data.partnerInsurancePremium || "").replace(/,/g, "")) || 0;
+            if (val <= 0) return null;
+            if (data.partnerInsuranceInSuper === "yes") {
+              return (
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#FBF8F2", border: "1px solid #E4D8BC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#6B5830", lineHeight: 1.5 }}>
+                  <span style={{ flexShrink: 0, marginTop: 1 }}>⚠</span>
+                  <span>
+                    {data.partnerName || "Partner"}'s premium is set to <strong>inside super</strong> in Stage 5. Editing it above will switch it to outside super.
+                  </span>
+                </div>
+              );
+            }
+            return (
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#2E4A3D", lineHeight: 1.5 }}>
+                <span style={{ flexShrink: 0, marginTop: 1 }}>↗</span>
+                <span>
+                  Synced to <strong>Super &amp; Goals (Stage 5)</strong> — update in either place.
+                </span>
+              </div>
+            );
+          })()}
+        </>
+      )}
+
+      <SectionDivider label="Private health insurance" />
+      <div style={{ fontSize: 12, color: "#8A8270", marginBottom: 14, lineHeight: 1.6 }}>
+        Hospital-level cover exempts you from the Medicare Levy Surcharge (1–1.5% of income) if your income exceeds the MLS threshold (~$93,000 single / $186,000 family).
+      </div>
+      <Field label={isCouple ? "Your hospital cover" : "Hospital-level private health cover"}>
+        <Toggle
+          value={data.privateHealthInsurance}
+          onChange={v => setMany({ privateHealthInsurance: v })}
+          options={[{ value: "yes", label: "Yes — have cover" }, { value: "no", label: "No cover" }]}
+        />
+      </Field>
+      {isCouple && (
+        <Field label={`${partner}'s hospital cover`}>
+          <Toggle
+            value={data.partnerPrivateHealthInsurance}
+            onChange={v => setMany({ partnerPrivateHealthInsurance: v })}
+            options={[{ value: "yes", label: "Yes — have cover" }, { value: "no", label: "No cover" }]}
+          />
+        </Field>
+      )}
     </div>
   );
 }

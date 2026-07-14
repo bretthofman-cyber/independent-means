@@ -133,6 +133,15 @@ export function generatePlanItems(data, engine) {
     );
   }
 
+  const ttr = engine.ttr;
+  if (ttr?.eligible && !ttr?.capAlreadyMaxed && ttr.annualTaxBenefit > 500) {
+    add("super", 2, "TTR_OPPORTUNITY",
+      "TTR strategy: accelerate concessional contributions from preservation age",
+      `You are past preservation age (60) and still working — a Transition to Retirement (TTR) arrangement may allow an additional ${fmt(ttr.effectiveAdditionalSS)}/yr in salary sacrifice. The tax saving is estimated at ${fmt(ttr.annualTaxBenefit)}/yr (marginal rate ${Math.round(ttr.marginalRate * 100)}% minus 15% contributions tax). A TTR income stream drawn at 4–10% of the account balance can replace the reduction in take-home pay. The cumulative tax benefit over ${ttr.yearsOfTTR} years to retirement is approximately ${fmt(ttr.cumulativeTaxBenefit)}.`,
+      "TTR drawdowns are tax-free after age 60. The strategy interacts with your salary sacrifice settings above. This observation is general information only — engage a licensed financial adviser (AFSL holder) to review your specific fund and tax position."
+    );
+  }
+
   if (m?.capExceeded) {
     add("super", 1, "CAP_EXCEEDED",
       "Concessional contribution cap appears exceeded",

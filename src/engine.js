@@ -314,7 +314,7 @@ export function propertyAnnualCashflow(ip) {
  * Deducts 15% contributions tax from all concessional contributions.
  * Also models Division 293 if applicable (as a separate cash flow, not super reduction).
  */
-function projectOnePerson(balance, grossIncome, sgRate, salarySacrifice, currentAge, retirementAge, returnRate) {
+function projectOnePerson(balance, grossIncome, sgRate, salarySacrifice, currentAge, retirementAge, returnRate, annualSuperInsurance = 0) {
   const years          = Math.max(retirementAge - currentAge, 0);
   const r              = returnRate;
   const sgAmount       = grossIncome * sgRate;
@@ -322,14 +322,16 @@ function projectOnePerson(balance, grossIncome, sgRate, salarySacrifice, current
   const concessional   = Math.min(sgAmount + ssAmount, SUPER.concessionalCap);
   // 15% contributions tax reduces net amount entering fund
   const netContribs    = concessional * (1 - SUPER.contribTaxRate);
+  // Insurance premiums are deducted from the account balance each year (not from contributions)
+  const netAnnual      = netContribs - annualSuperInsurance;
 
-  const projectedBalance = fvLump(balance, r, years) + fvAnnuity(netContribs, r, years);
+  const projectedBalance = fvLump(balance, r, years) + fvAnnuity(netAnnual, r, years);
 
   const trajectory = [];
   let bal = balance;
   for (let y = 0; y <= years; y++) {
     trajectory.push({ age: currentAge + y, balance: Math.round(bal) });
-    bal = bal * (1 + r) + netContribs;
+    bal = bal * (1 + r) + netAnnual;
   }
 
   return {
@@ -356,9 +358,12 @@ export function projectSuper(data, assumptions) {
   const partnerRetirementAge = isCouple ? (p(data.partnerRetirementAge) || retirementAge) : retirementAge;
   const partnerAge = isCouple ? p(data.partnerAge) : 0;
 
-  const person1 = projectOnePerson(p(data.superBalance), gross1, sgRate1, ss1, currentAge, retirementAge, r);
+  const ins1 = p(data.insurancePremium) > 0 && data.insuranceInSuper === "yes" ? p(data.insurancePremium) : 0;
+  const ins2 = isCouple && p(data.partnerInsurancePremium) > 0 && data.partnerInsuranceInSuper === "yes" ? p(data.partnerInsurancePremium) : 0;
+
+  const person1 = projectOnePerson(p(data.superBalance), gross1, sgRate1, ss1, currentAge, retirementAge, r, ins1);
   const person2 = isCouple
-    ? projectOnePerson(p(data.partnerSuperBalance), gross2, sgRate2, ss2, partnerAge, partnerRetirementAge, r)
+    ? projectOnePerson(p(data.partnerSuperBalance), gross2, sgRate2, ss2, partnerAge, partnerRetirementAge, r, ins2)
     : null;
 
   // Combined balance at retirement (use primary person's retirement age for joint view)
@@ -756,6 +761,12 @@ export function netWorthTrajectory(data, assumptions, householdTax) {
   const marginalRate1 = estimateMarginalRate(gross1 - p(data.salarySacrifice));
   let recycledCumulative = 0;
 
+  // Insurance: inside super reduces super balance; outside super reduces liquid savings
+  const superInsurance = (p(data.insurancePremium) > 0 && data.insuranceInSuper === "yes" ? p(data.insurancePremium) : 0)
+    + (isCouple && p(data.partnerInsurancePremium) > 0 && data.partnerInsuranceInSuper === "yes" ? p(data.partnerInsurancePremium) : 0);
+  const liquidInsurance = (p(data.insurancePremium) > 0 && data.insuranceInSuper !== "yes" ? p(data.insurancePremium) : 0)
+    + (isCouple && p(data.partnerInsurancePremium) > 0 && data.partnerInsuranceInSuper !== "yes" ? p(data.partnerInsurancePremium) : 0);
+
   const annualSavings = p(data.savingsPerMonth) * 12;
   const sgRate1       = (p(data.employerSgRate) || 12) / 100;
   const sgRate2       = isCouple ? (p(data.partnerEmployerSgRate) || 12) / 100 : 0;
@@ -823,8 +834,9 @@ export function netWorthTrajectory(data, assumptions, householdTax) {
       }
 
       // IP net cashflow + negative gearing benefit + franking refund + debt recycling saving
-      liquid   = liquid * (1 + r) + effectiveSavings + ipNetAnnualCF + negGearBenefit + frankingRefund + drTaxSaving;
-      superBal = superBal * (1 + r) + effectiveSuperIn;
+      // Outside-super insurance premiums reduce liquid savings; inside-super premiums reduce super balance
+      liquid   = liquid * (1 + r) + effectiveSavings + ipNetAnnualCF + negGearBenefit + frankingRefund + drTaxSaving - liquidInsurance;
+      superBal = superBal * (1 + r) + effectiveSuperIn - superInsurance;
     } else {
       const withdrawal = targetSpending * Math.pow(1 + inf, y - (retirementAge - currentAge));
       if (superBal >= withdrawal) {
@@ -943,6 +955,79 @@ export function runMonteCarlo(data, assumptions, iterations = 1000) {
   };
 }
 
+// ── TRANSITION TO RETIREMENT (TTR) ────────────────────────────────────────────
+
+function calculateTTR(data, assumptions) {
+  const currentAge    = p(data.age);
+  const retirementAge = p(data.retirementAge) || 65;
+  const superBalance  = p(data.superBalance);
+  const grossIncome   = p(data.grossIncome) + p(data.bonusIncome) + p(data.otherIncome);
+
+  if (!currentAge || !grossIncome || superBalance <= 0) {
+    return { eligible: false };
+  }
+
+  const preservationAge = SUPER.preservationAge; // 60
+
+  // TTR is only available from preservation age up to (not including) full retirement
+  if (currentAge < preservationAge || currentAge >= retirementAge) {
+    return { eligible: false };
+  }
+
+  const sgRate            = (p(data.employerSgRate) || 12) / 100;
+  const existingConcessional = Math.min(grossIncome * sgRate + p(data.salarySacrifice), SUPER.concessionalCap);
+  const additionalSSRoom  = Math.max(0, SUPER.concessionalCap - existingConcessional);
+
+  // No benefit if already maxing concessional cap
+  if (additionalSSRoom < 1000) {
+    return { eligible: false, capAlreadyMaxed: true, currentAge, retirementAge, preservationAge };
+  }
+
+  const marginalRate      = estimateMarginalRate(grossIncome);
+  const arbitrageRate     = marginalRate - SUPER.contribTaxRate; // tax saving per $ of SS
+  const yearsOfTTR        = retirementAge - currentAge;
+
+  // TTR pension: draw 4-10% of super balance; target enough to replace SS income sacrifice
+  // (salary sacrifice reduces take-home pay; TTR pension can offset this)
+  const ttrPensionMin     = superBalance * 0.04;
+  const ttrPensionMax     = superBalance * 0.10;
+  // Optimal: draw enough TTR pension to maintain cashflow while maximising SS
+  const effectiveAdditionalSS = Math.min(additionalSSRoom, grossIncome * 0.10); // cap at 10% of income
+  const ttrPension        = Math.min(ttrPensionMax, Math.max(ttrPensionMin, effectiveAdditionalSS));
+
+  const annualTaxBenefit  = effectiveAdditionalSS * arbitrageRate;
+  const cumulativeTaxBenefit = annualTaxBenefit * yearsOfTTR;
+
+  // Super balance with vs without TTR (simplified: net additional contributions compounded)
+  const r = assumptions.returnRate / 100;
+  const netAdditionalContrib = effectiveAdditionalSS * (1 - SUPER.contribTaxRate);
+  const superWithoutTTR = fvLump(superBalance, r, yearsOfTTR) +
+    fvAnnuity(existingConcessional * (1 - SUPER.contribTaxRate), r, yearsOfTTR);
+  const superWithTTR = fvLump(superBalance, r, yearsOfTTR) +
+    fvAnnuity((existingConcessional + effectiveAdditionalSS) * (1 - SUPER.contribTaxRate), r, yearsOfTTR);
+  const superBenefit = superWithTTR - superWithoutTTR;
+
+  return {
+    eligible: true,
+    capAlreadyMaxed: false,
+    currentAge,
+    retirementAge,
+    preservationAge,
+    yearsOfTTR,
+    existingConcessional,
+    additionalSSRoom,
+    effectiveAdditionalSS,
+    ttrPension,
+    annualTaxBenefit,
+    cumulativeTaxBenefit,
+    superWithoutTTR,
+    superWithTTR,
+    superBenefit,
+    marginalRate,
+    arbitrageRate,
+  };
+}
+
 // ── MAIN ENTRY POINT ──────────────────────────────────────────────────────────
 
 export function runEngine(data) {
@@ -985,6 +1070,9 @@ export function runEngine(data) {
   const fire       = fireCalc(data, assumptions);
   const fireNumber = fire?.fireNumber || 0;
 
+  // TTR (Transition to Retirement) — primary person only
+  const ttr = calculateTTR(data, assumptions);
+
   return {
     assumptions,
     super:          superResult,
@@ -997,6 +1085,7 @@ export function runEngine(data) {
     agePension:     agePensionAt67,
     fire,
     fireNumber,
+    ttr,
     metrics: {
       retirementNetWorth:    atRetirement?.netWorth  ?? 0,
       finalNetWorth:         atEnd?.netWorth          ?? 0,
