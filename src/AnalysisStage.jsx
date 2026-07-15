@@ -2,6 +2,7 @@ import { useState, useRef, useMemo, useContext } from "react";
 import { DEFAULT_SCENARIOS, runEngine } from "./engine.js";
 import { EntitlementContext } from "./useEntitlement.js";
 import PremiumGate from "./PremiumGate.jsx";
+import { FEATURES } from "./features.js";
 import { LIFE_EVENT_TYPES } from "./lifeEvents.js";
 import { generateWarnings } from "./warnings.js";
 import { currency, SectionDivider } from "./ui.jsx";
@@ -1332,7 +1333,7 @@ function AnalysisScreen({ data, set }) {
   const [expandedKey, setExpandedKey] = useState(data.activeScenario || "base");
   const [viewPerson, setViewPerson] = useState("combined");
 
-  const { isPremium, status, activateTrial } = useContext(EntitlementContext);
+  const { can, status, activateTrial } = useContext(EntitlementContext);
 
   const isCouple = data.hasPartner === "yes" && (data.partnerIncome || data.partnerSuperBalance || data.partnerAge);
   const aT = deriveAssetTotals(data.assetItems);
@@ -1346,7 +1347,7 @@ function AnalysisScreen({ data, set }) {
     ...ssData, ...aT,
     targetRetirementSpending: effectiveSpend > 0 ? String(effectiveSpend) : data.targetRetirementSpending,
   };
-  const engine = runEngine(derivedData, { skipMonteCarlo: !isPremium });
+  const engine = runEngine(derivedData, { skipMonteCarlo: !can(FEATURES.MONTE_CARLO) });
 
   function handleScenarioToggle(key) {
     if (data.activeScenario !== key) {
@@ -1383,7 +1384,7 @@ function AnalysisScreen({ data, set }) {
         <div style={{ fontSize: 12, color: "#6B6655" }}>
           Model different market conditions — conservative stress-tests a poor return sequence, aggressive models strong growth.
         </div>
-        {isPremium ? (
+        {can(FEATURES.CUSTOM_ASSUMPTIONS) ? (
           <button
             onClick={() => set("useCustomAssumptions", !data.useCustomAssumptions)}
             style={{

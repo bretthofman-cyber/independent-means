@@ -6,6 +6,7 @@ import { deriveAssetTotals } from "./AssetStage.jsx";
 import { applyMaxedSS } from "./AnalysisStage.jsx";
 import { EntitlementContext } from "./useEntitlement.js";
 import PremiumGate from "./PremiumGate.jsx";
+import { FEATURES } from "./features.js";
 
 const PRIORITY_STYLE = {
   1: { border: "#9a3922", bg: "#fdf3f0", dot: "#9a3922", label: "Attention" },
@@ -30,11 +31,11 @@ function PlanItem({ item }) {
 }
 
 function ActionPlanScreen({ data }) {
-  const { isPremium } = useContext(EntitlementContext);
+  const { can } = useContext(EntitlementContext);
   const aT = deriveAssetTotals(data.assetItems);
   const ssData = applyMaxedSS({ ...data, ...aT });
   const derivedData = { ...ssData, ...aT };
-  const engine = runEngine(derivedData, { skipMonteCarlo: !isPremium });
+  const engine = runEngine(derivedData, { skipMonteCarlo: !can(FEATURES.MONTE_CARLO) });
   const items = generatePlanItems(derivedData, engine);
 
   const grouped = Object.keys(PLAN_CATEGORIES).reduce((acc, key) => {

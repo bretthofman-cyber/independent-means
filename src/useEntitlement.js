@@ -1,9 +1,13 @@
 import { useState, useEffect, useCallback, createContext } from "react";
 import { supabase } from "./supabase.js";
+import { tierOf, can as _can, limit as _limit } from "./entitlement.js";
+import { LIMITS } from "./features.js";
 
 export const EntitlementContext = createContext({
   isPremium: false, isTrial: false, trialDaysLeft: 0,
-  trialEndsAt: null, isLoading: false, status: "free",
+  trialEndsAt: null, isLoading: false, status: "free", tier: "free",
+  can: () => false,
+  limit: (resource) => LIMITS.free[resource],
   activateTrial: async () => {},
 });
 
@@ -38,7 +42,6 @@ export function useEntitlement(userId) {
         setIsLoading(false);
       })
       .catch(() => {
-        // On network/RLS error default to free — don't block the app
         setStatus("free");
         setIsLoading(false);
       });
@@ -65,12 +68,15 @@ export function useEntitlement(userId) {
   }, [userId, status]);
 
   const now         = new Date();
-  const trialActive = status === "trialing" && trialEndsAt && trialEndsAt > now;
-  const isPremium   = trialActive || status === "active";
-  const isTrial     = trialActive;
+  const tier        = tierOf({ status, trialEndsAt });
+  const isPremium   = tier !== "free";
+  const isTrial     = tier === "trialing";
   const trialDaysLeft = trialEndsAt
     ? Math.max(0, Math.ceil((trialEndsAt - now) / (1000 * 60 * 60 * 24)))
     : 0;
 
-  return { isPremium, isTrial, trialDaysLeft, trialEndsAt, isLoading, status, activateTrial };
+  const can   = (feature)  => _can(tier, feature);
+  const limit = (resource) => _limit(tier, resource);
+
+  return { isPremium, isTrial, trialDaysLeft, trialEndsAt, isLoading, status, tier, can, limit, activateTrial };
 }
