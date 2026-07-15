@@ -3,6 +3,14 @@
     {
       "source": "/api/anthropic/:path*",
       "destination": "https://api.anthropic.com/:path*"
+    },
+    {
+      "source": "/auth/v1/:path*",
+      "destination": "https://phginabmxcfbpqdhjydj.supabase.co/auth/v1/:path*"
+    },
+    {
+      "source": "/rest/v1/:path*",
+      "destination": "https://phginabmxcfbpqdhjydj.supabase.co/rest/v1/:path*"
     }
   ]
 }
