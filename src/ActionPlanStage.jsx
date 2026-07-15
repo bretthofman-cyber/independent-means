@@ -1,8 +1,11 @@
+import { useContext } from "react";
 import { currency } from "./ui.jsx";
 import { generatePlanItems, PLAN_CATEGORIES } from "./actionPlan.js";
 import { runEngine } from "./engine.js";
 import { deriveAssetTotals } from "./AssetStage.jsx";
 import { applyMaxedSS } from "./AnalysisStage.jsx";
+import { EntitlementContext } from "./useEntitlement.js";
+import PremiumGate from "./PremiumGate.jsx";
 
 const PRIORITY_STYLE = {
   1: { border: "#9a3922", bg: "#fdf3f0", dot: "#9a3922", label: "Attention" },
@@ -27,10 +30,11 @@ function PlanItem({ item }) {
 }
 
 function ActionPlanScreen({ data }) {
+  const { isPremium } = useContext(EntitlementContext);
   const aT = deriveAssetTotals(data.assetItems);
   const ssData = applyMaxedSS({ ...data, ...aT });
   const derivedData = { ...ssData, ...aT };
-  const engine = runEngine(derivedData);
+  const engine = runEngine(derivedData, { skipMonteCarlo: !isPremium });
   const items = generatePlanItems(derivedData, engine);
 
   const grouped = Object.keys(PLAN_CATEGORIES).reduce((acc, key) => {
@@ -105,10 +109,12 @@ function ActionPlanScreen({ data }) {
       </div>
 
       <div className="no-print" style={{ marginTop: 20, display: "flex", gap: 10 }}>
-        <button onClick={() => window.print()} style={{
-          padding: "10px 20px", border: "none", borderRadius: 10,
-          background: "#C2A06B", color: "#2A2113", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-        }}>Print / Save PDF</button>
+        <PremiumGate featureId="pdf_export" label="Print / Save PDF">
+          <button onClick={() => window.print()} style={{
+            padding: "10px 20px", border: "none", borderRadius: 10,
+            background: "#C2A06B", color: "#2A2113", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+          }}>Print / Save PDF</button>
+        </PremiumGate>
       </div>
     </div>
   );

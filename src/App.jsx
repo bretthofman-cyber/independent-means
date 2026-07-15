@@ -5,7 +5,9 @@ import { currency, Field, Input, Select, Toggle, TwoCol, SectionDivider } from "
 import Stage2, { BUDGET_CATS } from "./BudgetStage.jsx";
 import AssetStage3, { deriveAssetTotals } from "./AssetStage.jsx";
 import { supabase } from "./supabase.js";
-import { useEntitlement } from "./useEntitlement.js";
+import { useEntitlement, EntitlementContext } from "./useEntitlement.js";
+import PremiumGate from "./PremiumGate.jsx";
+import TrialBanner from "./TrialBanner.jsx";
 import LoginScreen from "./LandingPage.jsx";
 import AnalysisScreen from "./AnalysisStage.jsx";
 import ActionPlanScreen from "./ActionPlanStage.jsx";
@@ -474,27 +476,29 @@ function Stage4({ data, set }) {
       {data.homeOwnership === "mortgage" && parseFloat(String(data.mortgageBalance || "").replace(/,/g, "")) > 0 && (
         <>
           <SectionDivider label="Debt recycling" />
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "12px 14px", border: "1.5px solid #D8D2C4", borderRadius: 10, background: "#FBFAF6", marginBottom: 16 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: "#21241E", marginBottom: 2 }}>Enable debt recycling</div>
-              <div style={{ fontSize: 11, color: "#8A8270", lineHeight: 1.5 }}>
-                Converts non-deductible mortgage interest to deductible investment debt as you repay and redraw. Modelled as an annual tax saving added to liquid savings. General information only — consult a tax adviser before implementing.
+          <PremiumGate featureId="debt_recycling" label="Debt recycling">
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "12px 14px", border: "1.5px solid #D8D2C4", borderRadius: 10, background: "#FBFAF6", marginBottom: 16 }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 500, color: "#21241E", marginBottom: 2 }}>Enable debt recycling</div>
+                <div style={{ fontSize: 11, color: "#8A8270", lineHeight: 1.5 }}>
+                  Converts non-deductible mortgage interest to deductible investment debt as you repay and redraw. Modelled as an annual tax saving added to liquid savings. General information only — consult a tax adviser before implementing.
+                </div>
               </div>
+              <button
+                onClick={() => set("debtRecycling", !data.debtRecycling)}
+                style={{
+                  width: 42, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
+                  background: data.debtRecycling ? "#2E4A3D" : "#D8D2C4",
+                  position: "relative", flexShrink: 0, marginTop: 2, transition: "background 0.2s",
+                }}
+              >
+                <div style={{
+                  width: 18, height: 18, borderRadius: "50%", background: "white",
+                  position: "absolute", top: 3, left: data.debtRecycling ? 21 : 3, transition: "left 0.2s",
+                }} />
+              </button>
             </div>
-            <button
-              onClick={() => set("debtRecycling", !data.debtRecycling)}
-              style={{
-                width: 42, height: 24, borderRadius: 12, border: "none", cursor: "pointer",
-                background: data.debtRecycling ? "#2E4A3D" : "#D8D2C4",
-                position: "relative", flexShrink: 0, marginTop: 2, transition: "background 0.2s",
-              }}
-            >
-              <div style={{
-                width: 18, height: 18, borderRadius: "50%", background: "white",
-                position: "absolute", top: 3, left: data.debtRecycling ? 21 : 3, transition: "left 0.2s",
-              }} />
-            </button>
-          </div>
+          </PremiumGate>
         </>
       )}
       <SectionDivider label="Investment properties" />
@@ -648,31 +652,35 @@ function Stage5({ data, set }) {
       <div style={{ fontSize: 12, color: "#8A8270", marginBottom: 12, lineHeight: 1.5 }}>
         If your prior-year super balance was under $500,000 and you have unused concessional cap from previous years, you may be able to contribute more than the $30,000 annual cap. Check your available amount via ATO online services.
       </div>
-      <TwoCol>
-        <Field label="Your carry-forward cap available" hint="From ATO online services — leave blank if not applicable">
-          <Input value={data.carryForwardCap} onChange={v => set("carryForwardCap", v)} placeholder="0" prefix="$" />
-        </Field>
-        {data.hasPartner === "yes" && (
-          <Field label={`${data.partnerName || "Partner"}'s carry-forward cap`} hint="From ATO online services">
-            <Input value={data.partnerCarryForwardCap} onChange={v => set("partnerCarryForwardCap", v)} placeholder="0" prefix="$" />
+      <PremiumGate featureId="carry_forward_cap" label="Carry-forward contributions">
+        <TwoCol>
+          <Field label="Your carry-forward cap available" hint="From ATO online services — leave blank if not applicable">
+            <Input value={data.carryForwardCap} onChange={v => set("carryForwardCap", v)} placeholder="0" prefix="$" />
           </Field>
-        )}
-      </TwoCol>
+          {data.hasPartner === "yes" && (
+            <Field label={`${data.partnerName || "Partner"}'s carry-forward cap`} hint="From ATO online services">
+              <Input value={data.partnerCarryForwardCap} onChange={v => set("partnerCarryForwardCap", v)} placeholder="0" prefix="$" />
+            </Field>
+          )}
+        </TwoCol>
+      </PremiumGate>
 
       <SectionDivider label="Franking credits" />
       <div style={{ fontSize: 12, color: "#8A8270", marginBottom: 12, lineHeight: 1.5 }}>
         Annual franking credits from Australian shares or managed funds. These offset your income tax — any excess is refunded by the ATO. Check your dividend statements or last year's tax return.
       </div>
-      <TwoCol>
-        <Field label="Your annual franking credits" hint="From dividends — shown on dividend statements">
-          <Input value={data.frankingCredits} onChange={v => set("frankingCredits", v)} placeholder="0" prefix="$" />
-        </Field>
-        {data.hasPartner === "yes" && (
-          <Field label={`${data.partnerName || "Partner"}'s franking credits`}>
-            <Input value={data.partnerFrankingCredits} onChange={v => set("partnerFrankingCredits", v)} placeholder="0" prefix="$" />
+      <PremiumGate featureId="franking_credits" label="Franking credits">
+        <TwoCol>
+          <Field label="Your annual franking credits" hint="From dividends — shown on dividend statements">
+            <Input value={data.frankingCredits} onChange={v => set("frankingCredits", v)} placeholder="0" prefix="$" />
           </Field>
-        )}
-      </TwoCol>
+          {data.hasPartner === "yes" && (
+            <Field label={`${data.partnerName || "Partner"}'s franking credits`}>
+              <Input value={data.partnerFrankingCredits} onChange={v => set("partnerFrankingCredits", v)} placeholder="0" prefix="$" />
+            </Field>
+          )}
+        </TwoCol>
+      </PremiumGate>
 
       <SectionDivider label="Life & disability insurance" />
       <div style={{ fontSize: 12, color: "#8A8270", marginBottom: 14, lineHeight: 1.6 }}>
@@ -1006,6 +1014,7 @@ export default function IndependentMeans() {
   const runway = monthlyLiquid > 0 && monthlyExp > 0 ? (monthlyLiquid / monthlyExp).toFixed(1) : "—";
 
   return (
+    <EntitlementContext.Provider value={entitlement}>
     <div style={{ minHeight: "100vh", background: "#F5F2EB", fontFamily: "'Albert Sans', sans-serif", display: "flex", flexDirection: "column" }}>
       <style>{"@import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Albert+Sans:wght@300;400;500;600&display=swap'); @keyframes bounce { 0%,80%,100% { transform: translateY(0); opacity: .5; } 40% { transform: translateY(-5px); opacity: 1; } } @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } * { box-sizing: border-box; } input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }"}</style>
       <style>{`:root {
@@ -1069,6 +1078,8 @@ export default function IndependentMeans() {
           >Sign out</button>
         </div>
       </header>
+
+      <TrialBanner isTrial={entitlement.isTrial} trialDaysLeft={entitlement.trialDaysLeft} />
 
       <div className="no-print" style={{ background: "white", borderBottom: "1px solid #ECE7DB", padding: "0 28px 14px" }}>
         <div style={{ display: "flex", gap: 4, marginBottom: 10 }}>
@@ -1164,5 +1175,6 @@ export default function IndependentMeans() {
         </div>
       </footer>
     </div>
+    </EntitlementContext.Provider>
   );
 }

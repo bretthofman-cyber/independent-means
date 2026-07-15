@@ -1,5 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, createContext } from "react";
 import { supabase } from "./supabase.js";
+
+export const EntitlementContext = createContext({
+  isPremium: false, isTrial: false, trialDaysLeft: 0,
+  trialEndsAt: null, isLoading: false, status: "free",
+  activateTrial: async () => {},
+});
 
 const TRIAL_DAYS = 14;
 
@@ -66,5 +72,5 @@ export function useEntitlement(userId) {
     ? Math.max(0, Math.ceil((trialEndsAt - now) / (1000 * 60 * 60 * 24)))
     : 0;
 
-  return { isPremium, isTrial, trialDaysLeft, trialEndsAt, isLoading, activateTrial };
+  return { isPremium, isTrial, trialDaysLeft, trialEndsAt, isLoading, status, activateTrial };
 }

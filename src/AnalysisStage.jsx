@@ -1,5 +1,7 @@
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useContext } from "react";
 import { DEFAULT_SCENARIOS, runEngine } from "./engine.js";
+import { EntitlementContext } from "./useEntitlement.js";
+import PremiumGate from "./PremiumGate.jsx";
 import { LIFE_EVENT_TYPES } from "./lifeEvents.js";
 import { generateWarnings } from "./warnings.js";
 import { currency, SectionDivider } from "./ui.jsx";
@@ -1330,6 +1332,8 @@ function AnalysisScreen({ data, set }) {
   const [expandedKey, setExpandedKey] = useState(data.activeScenario || "base");
   const [viewPerson, setViewPerson] = useState("combined");
 
+  const { isPremium, status, activateTrial } = useContext(EntitlementContext);
+
   const isCouple = data.hasPartner === "yes" && (data.partnerIncome || data.partnerSuperBalance || data.partnerAge);
   const aT = deriveAssetTotals(data.assetItems);
   const baseSpend = parseFloat(String(data.targetRetirementSpending || "").replace(/,/g, "")) || 0;
@@ -1342,7 +1346,7 @@ function AnalysisScreen({ data, set }) {
     ...ssData, ...aT,
     targetRetirementSpending: effectiveSpend > 0 ? String(effectiveSpend) : data.targetRetirementSpending,
   };
-  const engine = runEngine(derivedData);
+  const engine = runEngine(derivedData, { skipMonteCarlo: !isPremium });
 
   function handleScenarioToggle(key) {
     if (data.activeScenario !== key) {
@@ -1379,28 +1383,42 @@ function AnalysisScreen({ data, set }) {
         <div style={{ fontSize: 12, color: "#6B6655" }}>
           Model different market conditions — conservative stress-tests a poor return sequence, aggressive models strong growth.
         </div>
-        <button
-          onClick={() => set("useCustomAssumptions", !data.useCustomAssumptions)}
-          style={{
-            display: "flex", alignItems: "center", gap: 8, padding: "6px 12px",
-            border: "1.5px solid", borderColor: data.useCustomAssumptions ? "#2E4A3D" : "#D8D2C4",
-            borderRadius: 20, background: data.useCustomAssumptions ? "#EAF0EC" : "white",
-            cursor: "pointer", fontFamily: "inherit", fontSize: 12,
-            color: data.useCustomAssumptions ? "#2E4A3D" : "#6B6655", flexShrink: 0, marginLeft: 12,
-          }}
-        >
-          <div style={{
-            width: 32, height: 18, borderRadius: 9, background: data.useCustomAssumptions ? "#2E4A3D" : "#D8D2C4",
-            position: "relative", transition: "background 0.2s",
-          }}>
+        {isPremium ? (
+          <button
+            onClick={() => set("useCustomAssumptions", !data.useCustomAssumptions)}
+            style={{
+              display: "flex", alignItems: "center", gap: 8, padding: "6px 12px",
+              border: "1.5px solid", borderColor: data.useCustomAssumptions ? "#2E4A3D" : "#D8D2C4",
+              borderRadius: 20, background: data.useCustomAssumptions ? "#EAF0EC" : "white",
+              cursor: "pointer", fontFamily: "inherit", fontSize: 12,
+              color: data.useCustomAssumptions ? "#2E4A3D" : "#6B6655", flexShrink: 0, marginLeft: 12,
+            }}
+          >
             <div style={{
-              width: 14, height: 14, borderRadius: "50%", background: "white",
-              position: "absolute", top: 2, left: data.useCustomAssumptions ? 16 : 2,
-              transition: "left 0.2s",
-            }} />
-          </div>
-          {data.useCustomAssumptions ? "Custom on" : "Default"}
-        </button>
+              width: 32, height: 18, borderRadius: 9, background: data.useCustomAssumptions ? "#2E4A3D" : "#D8D2C4",
+              position: "relative", transition: "background 0.2s",
+            }}>
+              <div style={{
+                width: 14, height: 14, borderRadius: "50%", background: "white",
+                position: "absolute", top: 2, left: data.useCustomAssumptions ? 16 : 2,
+                transition: "left 0.2s",
+              }} />
+            </div>
+            {data.useCustomAssumptions ? "Custom on" : "Default"}
+          </button>
+        ) : (
+          <button
+            onClick={async () => { if (status === "free") { await activateTrial(); } }}
+            style={{
+              display: "flex", alignItems: "center", gap: 6, padding: "6px 12px",
+              border: "1.5px solid #D8D2C4", borderRadius: 20, background: "white",
+              cursor: "pointer", fontFamily: "inherit", fontSize: 12, color: "#9DB0A1",
+              flexShrink: 0, marginLeft: 12,
+            }}
+          >
+            🔒 Custom
+          </button>
+        )}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
@@ -1457,11 +1475,15 @@ function AnalysisScreen({ data, set }) {
 
       <WarningsPanel data={derivedData} engine={engine} />
       <MetricsRow engine={engine} data={derivedData} />
-      <MonteCarloCard data={derivedData} engine={engine} />
+      <PremiumGate featureId="monte_carlo" label="Monte Carlo simulation">
+        <MonteCarloCard data={derivedData} engine={engine} />
+      </PremiumGate>
       <FIREPanel engine={engine} data={derivedData} />
       <NetWorthChart engine={engine} data={derivedData} />
       <ProjectionTable engine={engine} data={derivedData} />
-      <ScenarioComparisonRow data={derivedData} />
+      <PremiumGate featureId="scenario_comparison" label="Scenario comparison">
+        <ScenarioComparisonRow data={derivedData} />
+      </PremiumGate>
       {(data.budgetItems || []).length > 0 && (() => {
         const netMo = estimateNetMonthly(data);
         const startCash = deriveAssetTotals(data.assetItems).cashSavings;
@@ -1472,10 +1494,12 @@ function AnalysisScreen({ data, set }) {
       <AnalysisSummary data={derivedData} engine={engine} />
       <AssumptionsRegister engine={engine} data={derivedData} />
       <div style={{ marginTop: 24, display: "flex", gap: 10 }}>
-        <button onClick={() => window.print()} style={{
-          padding: "10px 20px", border: "none", borderRadius: 10,
-          background: "#C2A06B", color: "#2A2113", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
-        }}>Print / Save PDF</button>
+        <PremiumGate featureId="pdf_export" label="Print / Save PDF">
+          <button onClick={() => window.print()} style={{
+            padding: "10px 20px", border: "none", borderRadius: 10,
+            background: "#C2A06B", color: "#2A2113", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+          }}>Print / Save PDF</button>
+        </PremiumGate>
       </div>
     </div>
   );

@@ -1030,7 +1030,7 @@ function calculateTTR(data, assumptions) {
 
 // ── MAIN ENTRY POINT ──────────────────────────────────────────────────────────
 
-export function runEngine(data) {
+export function runEngine(data, { skipMonteCarlo = false } = {}) {
   const assumptions = getActiveAssumptions(data);
 
   const propertyCashflows = (data.investmentProperties || []).map(ip => ({
@@ -1044,7 +1044,7 @@ export function runEngine(data) {
   const drawdown     = retirementDrawdown(data, assumptions, superResult.projectedBalance);
   const mortgage     = debtFreeDate(data);
   const trajectory   = netWorthTrajectory(data, assumptions, householdTax);
-  const monteCarlo   = runMonteCarlo(data, assumptions);
+  const monteCarlo   = skipMonteCarlo ? null : runMonteCarlo(data, assumptions);
 
   const retirementAge    = p(data.retirementAge) || 65;
   const atRetirement     = trajectory.find(t => t.age === retirementAge);
