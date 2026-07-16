@@ -6,7 +6,7 @@ import UpgradeModal from "./UpgradeModal.jsx";
 import ImprovePlanModal from "./ImprovePlanModal.jsx";
 import StrategyCentre from "./StrategyCentre.jsx";
 import { FEATURES } from "./features.js";
-import { trackGateClick } from "./analytics.js";
+import { trackGateClick, trackImprovePlanOpened, trackScenarioCreated, trackMonteCarloRun } from "./analytics.js";
 import { runOpportunityDetectors } from "./opportunityEngine.js";
 import { LIFE_EVENT_TYPES } from "./lifeEvents.js";
 import { generateWarnings } from "./warnings.js";
@@ -1499,6 +1499,7 @@ function AnalysisScreen({ data, set }) {
   function handleProbabilityClick() {
     if (can(FEATURES.PROBABILITY_VIEW)) {
       setChartView("probability");
+      trackMonteCarloRun();
     } else {
       trackGateClick(FEATURES.PROBABILITY_VIEW, { source: "toggle" });
       setShowProbModal(true);
@@ -1531,6 +1532,7 @@ function AnalysisScreen({ data, set }) {
     if (data.activeScenario !== key) {
       set("activeScenario", key);
       setExpandedKey(key);
+      trackScenarioCreated(key);
     } else {
       setExpandedKey(prev => prev === key ? null : key);
     }
@@ -1674,7 +1676,7 @@ function AnalysisScreen({ data, set }) {
         if (matched === 0) return null;
         return (
           <div
-            onClick={() => setShowImproveModal(true)}
+            onClick={() => { setShowImproveModal(true); trackImprovePlanOpened(matched); }}
             style={{
               background: "#2E4A3D", borderRadius: 12,
               padding: "16px 20px", marginBottom: 20,

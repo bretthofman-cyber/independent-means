@@ -182,7 +182,7 @@ describe("Analytics event stubs — trackTrialStarted / trackTrialExpired", () =
 
     trackTrialStarted("carry_forward_cap");
 
-    const hit = calls.find(c => c.event === "Trial Started");
+    const hit = calls.find(c => c.event === "trial_started");
     expect(hit).toBeDefined();
     expect(hit.opts.props.feature).toBe("carry_forward_cap");
   });
@@ -193,6 +193,6 @@ describe("Analytics event stubs — trackTrialStarted / trackTrialExpired", () =
 
     trackTrialExpired();
 
-    expect(calls.some(c => c.event === "Trial Expired")).toBe(true);
+    expect(calls.some(c => c.event === "trial_expired")).toBe(true);
   });
 });

@@ -9,6 +9,7 @@ import { useEntitlement, EntitlementContext } from "./useEntitlement.js";
 import PremiumGate from "./PremiumGate.jsx";
 import TrialBanner from "./TrialBanner.jsx";
 import PricingPage from "./PricingPage.jsx";
+import AdminDashboard from "./AdminDashboard.jsx";
 import { FEATURES } from "./features.js";
 import { trackSubscriptionActivated } from "./analytics.js";
 import LoginScreen from "./LandingPage.jsx";
@@ -913,6 +914,8 @@ export default function IndependentMeans() {
   const [data, setData]               = useState({ ...EMPTY_DATA });
   const [stage, setStage]             = useState(1);
   const [showPricing, setShowPricing] = useState(false);
+  const [showAdmin,   setShowAdmin]   = useState(false);
+  const isAdmin = user?.email === import.meta.env.VITE_ADMIN_EMAIL;
   const scrollRef  = useRef(null);
   const saveTimer  = useRef(null);
 
@@ -1084,6 +1087,12 @@ export default function IndependentMeans() {
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {data.firstName && <div style={{ fontSize: 12, color: "#6B6655" }}>Hi, {data.firstName} 👋</div>}
+          {isAdmin && (
+            <button
+              onClick={() => setShowAdmin(true)}
+              style={{ fontSize: 11, color: "#8A8270", background: "none", border: "1px solid #ECE7DB", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}
+            >Analytics</button>
+          )}
           <PremiumGate featureId={FEATURES.MULTI_PLAN} label="Multiple plans" onOpenPricing={() => setShowPricing(true)}>
             <button
               style={{ fontSize: 11, color: "#2E4A3D", background: "none", border: "1px solid #9DB0A1", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}
@@ -1213,6 +1222,7 @@ export default function IndependentMeans() {
         </div>
       </footer>
 
+      {showAdmin   && <AdminDashboard onClose={() => setShowAdmin(false)} />}
       {showPricing && (
         <PricingPage user={user} onClose={() => setShowPricing(false)} />
       )}

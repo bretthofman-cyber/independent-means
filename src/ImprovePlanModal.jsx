@@ -1,7 +1,7 @@
-import { useContext, useState } from "react";
+import { useContext, useState, useEffect } from "react";
 import { EntitlementContext } from "./useEntitlement.js";
 import { runOpportunityDetectors } from "./opportunityEngine.js";
-import { trackGateClick } from "./analytics.js";
+import { trackGateClick, trackOpportunityViewed } from "./analytics.js";
 import { FEATURES } from "./features.js";
 
 function OpportunityRow({ opp }) {
@@ -50,6 +50,12 @@ export default function ImprovePlanModal({ data, engine, onClose, onOpenStrategy
   const isPremium = can(FEATURES.STRATEGY_CENTRE);
   const opportunities = runOpportunityDetectors(data, engine);
   const matchCount = opportunities.filter(o => o.matched).length;
+
+  useEffect(() => {
+    const matchedIds = opportunities.filter(o => o.matched).map(o => o.id);
+    trackOpportunityViewed(matchedIds);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleStartTrial() {
     trackGateClick("improve_my_plan", { source: "improve_modal", action: "start_trial" });

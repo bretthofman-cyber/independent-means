@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { runEngine } from "./engine.js";
 import { deriveAssetTotals } from "./AssetStage.jsx";
 import { runOpportunityDetectors } from "./opportunityEngine.js";
 import { currency } from "./ui.jsx";
+import { trackStrategyModuleUsed } from "./analytics.js";
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
 
@@ -329,6 +330,11 @@ export default function StrategyCentre({ data, engine, onClose }) {
   const opportunities = runOpportunityDetectors(enrichedData, engine);
   const available = opportunities.filter(o => o.matched && MODULES[o.id]);
   const [activeId, setActiveId] = useState(available[0]?.id ?? null);
+
+  useEffect(() => {
+    if (activeId) trackStrategyModuleUsed(activeId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeId]);
 
   const ActiveModule = activeId ? MODULES[activeId] : null;
 
