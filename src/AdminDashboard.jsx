@@ -165,7 +165,7 @@ function TrialConversionPanel() {
     <div style={panelStyle}>
       <div style={panelTitle}>Trial conversion by originating feature</div>
       <div style={{ fontSize: 11, color: "#8A8270", marginBottom: 12 }}>
-        All time — based on the feature that triggered the user's trial
+        All time: based on the feature that triggered the user's trial
       </div>
       {error && <div style={errorStyle}>{error}</div>}
       {!rows && !error && <div style={dimStyle}>Loading...</div>}

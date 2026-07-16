@@ -163,7 +163,7 @@ export default function PricingPage({ onClose, user }) {
         <div style={S.h1}>See your complete financial picture</div>
         <div style={S.subtitle}>
           Monte Carlo analysis, scenario comparison, advanced AU tax modelling,
-          and the Strategy Centre — all in one plan.
+          and the Strategy Centre, all in one plan.
         </div>
 
         {/* Monthly / Annual toggle */}
@@ -198,7 +198,7 @@ export default function PricingPage({ onClose, user }) {
           </div>
           <div style={S.priceSub}>
             {isAnnual
-              ? `${ANNUAL_PM}/mo billed annually — save A$31 vs monthly`
+              ? `${ANNUAL_PM}/mo billed annually, saving A$31 vs monthly`
               : "Billed monthly. Cancel any time."}
           </div>
         </div>
@@ -214,7 +214,7 @@ export default function PricingPage({ onClose, user }) {
         </button>
         <div style={S.disclaimer}>
           Secure checkout via Stripe. Cancel or change plan at any time in billing settings.
-          General information only — not personal financial advice.
+          General information only. Not personal financial advice.
         </div>
 
         {/* Feature table */}

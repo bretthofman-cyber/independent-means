@@ -38,7 +38,7 @@ export function detectSalarySacrifice(data) {
     id: "salary_sacrifice",
     title: "Salary sacrifice headroom",
     description: matched
-      ? `$${Math.round(headroom).toLocaleString()} headroom under the $${SUPER.concessionalCap.toLocaleString()} concessional cap — salary sacrificing more reduces tax while growing super.`
+      ? `$${Math.round(headroom).toLocaleString()} headroom under the $${SUPER.concessionalCap.toLocaleString()} concessional cap. Salary sacrificing more reduces tax while growing super.`
       : "Concessional cap is near or fully utilised at your current income and contribution level.",
     matched,
     featureId: FEATURES.CUSTOM_ASSUMPTIONS,
@@ -59,8 +59,8 @@ export function detectMortgageAcceleration(data) {
     id: "mortgage_acceleration",
     title: "Mortgage payoff acceleration",
     description: matched
-      ? `Mortgage of $${Math.round(balance).toLocaleString()} at ${rate}% — overpayment scenarios show how much interest can be saved and years removed.`
-      : "No high-rate mortgage detected — acceleration modelling is not applicable.",
+      ? `Mortgage of $${Math.round(balance).toLocaleString()} at ${rate}%. Overpayment scenarios show how much interest can be saved and years removed.`
+      : "No high-rate mortgage detected. Acceleration modelling is not applicable.",
     matched,
     featureId: FEATURES.DEBT_RECYCLING,
     priority: 3,
@@ -79,9 +79,9 @@ export function detectCarryForwardCap(data) {
     id: "carry_forward_cap",
     title: "Carry-forward concessional cap",
     description: matched
-      ? `Super balance of $${Math.round(superBal).toLocaleString()} is under the $500k threshold — unused cap from prior years may be available for a one-off tax-saving contribution.`
+      ? `Super balance of $${Math.round(superBal).toLocaleString()} is under the $500k threshold. Unused cap from prior years may be available for a one-off tax-saving contribution.`
       : superBal >= CARRY_FORWARD_SUPER_CAP
-        ? "Super balance above $500k — carry-forward cap is not available."
+        ? "Super balance above $500k. Carry-forward cap is not available."
         : "Enter a super balance to check carry-forward eligibility.",
     matched,
     featureId: FEATURES.CARRY_FORWARD_CAP,
@@ -106,7 +106,7 @@ export function detectRetirementAgeOptimisation(data, engine = null) {
     id: "retirement_age",
     title: "Retirement age optimisation",
     description: matched
-      ? `Retiring at ${retAge} puts ${projStr} — model the crossover: how retiring 1 to 3 years earlier or later shifts your outcome.`
+      ? `Retiring at ${retAge} puts ${projStr}. Model the crossover: how retiring 1 to 3 years earlier or later shifts your outcome.`
       : "Enter income and super details to model retirement age scenarios.",
     matched,
     featureId: FEATURES.CUSTOM_ASSUMPTIONS,
@@ -149,8 +149,8 @@ export function detectDebtRecycling(data) {
     id: "debt_recycling",
     title: "Debt recycling scenario",
     description: matched
-      ? `Mortgage of $${Math.round(balance).toLocaleString()} with existing investment assets — debt recycling may convert non-deductible interest into a tax deduction while building wealth.`
-      : "Debt recycling requires both a mortgage and investment assets — no candidate detected.",
+      ? `Mortgage of $${Math.round(balance).toLocaleString()} with existing investment assets. Debt recycling may convert non-deductible interest into a tax deduction while building wealth.`
+      : "Debt recycling requires both a mortgage and investment assets. No candidate detected.",
     matched,
     featureId: FEATURES.DEBT_RECYCLING,
     priority: 6,

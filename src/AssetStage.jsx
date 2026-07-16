@@ -361,7 +361,7 @@ export default function AssetStage3({ data, setMany }) {
       )}
 
       <SectionDivider label="Emergency position" />
-      <Field label="Dedicated emergency fund" hint="Separate from everyday savings — typically 3–6 months of expenses">
+      <Field label="Dedicated emergency fund" hint="Separate from everyday savings; typically 3–6 months of expenses">
         <Input value={data.emergencyFund} onChange={v => setMany({ emergencyFund: v })} placeholder="10,000" prefix="$" />
       </Field>
     </div>

@@ -68,7 +68,7 @@ function ActionPlanScreen({ data }) {
       )}
 
       <div style={{ fontSize: 12, color: "#8A8270", lineHeight: 1.6, background: "#F5F2EB", borderRadius: 8, padding: "10px 14px", marginBottom: 20 }}>
-        The observations below are derived from your inputs and the modelling engine. They present calculations and factual notes — not personal financial advice. For decisions affecting your financial position, consult a licensed Australian financial adviser (AFSL holder).
+        The observations below are derived from your inputs and the modelling engine. They present calculations and factual notes, not personal financial advice. For decisions affecting your financial position, consult a licensed Australian financial adviser (AFSL holder).
       </div>
 
       {Object.entries(PLAN_CATEGORIES).map(([key, cat]) => {
@@ -93,7 +93,7 @@ function ActionPlanScreen({ data }) {
         </div>
         {[
           "Super contribution strategies, including salary sacrifice, carry-forward, and spouse contributions",
-          "Insurance — life, income protection, TPD, and trauma cover inside and outside super",
+          "Insurance: life, income protection, TPD, and trauma cover inside and outside super",
           "Tax-effective investment structuring, including trust structures and ownership allocation",
           "Debt management strategies, including debt recycling where applicable",
           "Estate planning — will, enduring power of attorney, and superannuation death benefit nominations",

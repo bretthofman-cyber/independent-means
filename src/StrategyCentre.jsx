@@ -267,7 +267,7 @@ function ExtraMortgageModule({ data, engine }) {
       </div>
 
       {!balance ? (
-        <div style={{ color: "#8A8270", fontSize: 13, padding: "20px 0" }}>No mortgage recorded — enter your PPOR mortgage in Stage 4 to use this module.</div>
+        <div style={{ color: "#8A8270", fontSize: 13, padding: "20px 0" }}>No mortgage recorded. Enter your PPOR mortgage in Stage 4 to use this module.</div>
       ) : (
         <>
           <SliderRow

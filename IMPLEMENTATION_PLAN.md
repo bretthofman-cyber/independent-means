@@ -357,51 +357,84 @@ This is a 5-line change; do it in Phase 2 when gating is added.
 
 **Test count after Phase 5:** 166 passing (142 + 24 new)
 
-### Phase 6 — Plausible Analytics
+### Phase 6 — Gate Analytics + Admin Dashboard (COMPLETE)
 
-**Goal:** Page views and gate clicks tracked in production.
+**Goal:** Self-hosted analytics pipeline to learn which locked features drive upgrade intent.
 
-| File | Change |
+| File | Status |
 |---|---|
-| `index.html` | Add Plausible `<script>` tag |
-| `src/analytics.js` | Stubs already in place from Phase 2–4; confirm events fire with Plausible installed |
+| `supabase-events-table.sql` | DONE — `events` table; RLS enabled; service_role writes only |
+| `api/track.js` | DONE — JWT-verified event writer; strips numeric values from context (no financial data in payloads) |
+| `src/adminStatsQueries.js` | DONE — pure query functions: `gateClicksByFeature`, `funnelStats`, `trialConversionByFeature` |
+| `api/admin-stats.js` | DONE — JWT-verified; admin email gate; three actions: gate_clicks, funnel, trial_conversion |
+| `src/analytics.js` | DONE — full rewrite; 11 tracked events; fire-and-forget POST to `/api/track`; Plausible sync; 14 unit tests |
+| `src/AdminDashboard.jsx` | DONE — email-gated full-screen overlay; date range picker; Funnel, Gate Clicks, Trial Conversion panels |
+| `src/AnalysisStage.jsx` | DONE — added `trackImprovePlanOpened`, `trackMonteCarloRun`, `trackScenarioCreated` |
+| `src/ImprovePlanModal.jsx` | DONE — added `trackOpportunityViewed` on mount |
+| `src/StrategyCentre.jsx` | DONE — added `trackStrategyModuleUsed(activeId)` on tab change |
+| `src/App.jsx` | DONE — Admin button (admin-email-gated); `showAdmin` state; AdminDashboard render |
+| `public/privacy.html` | DONE — analytics disclosure added |
+| `src/analytics.test.js` | DONE — 14 tests; fire-and-forget flush helper |
+| `src/adminStats.test.js` | DONE — 16 tests; thenable Supabase mock chain |
 
-### Phase 7 — PDF and CSV export
+**Test count after Phase 6:** 223 passing
+
+### Phase 7 — AFSL Language Review + Font Sizes (COMPLETE)
+
+**Goal:** Remove regulated-advice language, plan/opportunity framing, and small font sizes on desktop.
+
+| File | Changes |
+|---|---|
+| `src/App.jsx` | Stage 7 label "Plan" → "Summary"; "Your Plan Summary" → "Your Financial Summary" |
+| `src/AnalysisStage.jsx` | "Improve your plan" banner → "Explore your scenarios" |
+| `src/ImprovePlanModal.jsx` | "Your plan opportunities" → "Modelling insights"; "opportunities detected" → "scenarios identified" |
+| `src/PricingPage.jsx` | "Full 8-stage financial plan" → "Full 8-stage financial model" |
+| `src/UpgradeModal.jsx` | Scenario language, "second financial model", "strengthen your financial picture" |
+| `src/LandingPage.jsx` | "financial data inputs"; "1 saved model"; pricing bullet font 12→13 |
+| `src/AssetStage.jsx` | Emergency fund hint: "recommended" → "typically" |
+| `src/ActionPlanStage.jsx` | Font sizes: summary card label 10→11; section header 10→11; category heading 11→12 |
+
+### Phase 8 — PDF and CSV export (Partially complete)
 
 **Goal:** Premium export features working.
 
-| File | Change |
+| Feature | Status |
 |---|---|
-| `src/AnalysisStage.jsx` | Polish print CSS for PDF; add page breaks; remove interactive elements from print view |
-| `src/exportCsv.js` | New file — serialises trajectory and metrics to CSV; triggers download |
-| `src/ActionPlanStage.jsx` | Add CSV download button (gated) |
+| PDF export (print) | DONE — gated behind `pdf_export`; `window.print()` button in ActionPlanStage |
+| CSV export | STUB — listed as "coming soon" in Premium features; not built (post-launch) |
 
-### Phase 8 — Strategy Centre (deep modelling)
+### Phase 9 — Strategy Centre (COMPLETE)
 
-**Goal:** Per-opportunity scenario modelling inside "Improve my plan".
+**Goal:** Per-opportunity interactive modelling inside "Explore your scenarios".
 
-| File | Change |
+| File | Status |
 |---|---|
-| `src/strategyEngine.js` | New file — per-opportunity number-crunching functions |
-| `src/StrategyCentre.jsx` | New file — renders opportunities as cards; AFSL-compliant framing; adviser referral on each card |
-| `src/AnalysisStage.jsx` | Wire Strategy Centre tab; gate with `<PremiumGate featureId="strategy_centre">` |
+| `src/StrategyCentre.jsx` | DONE — three interactive modules: Salary Sacrifice, Retirement Age, Extra Mortgage Repayments; real-time slider → engine recalc → stat card delta display; AFSL Disclaimer component on each module |
+| `src/opportunityEngine.js` | DONE — 6 pure detectors; determines which modules are shown based on user's data |
+| `src/ImprovePlanModal.jsx` | DONE — "Open Strategy Centre" CTA routes premium/trial users to StrategyCentre |
+| `src/AnalysisStage.jsx` | DONE — "Explore your scenarios" banner; Strategy Centre tab gated with `strategy_centre` featureId |
 
-### Phase 9 — Snapshots (stub) and CSV import (stub)
+### Phase 10 — End-to-End QA Pass (COMPLETE)
 
-**Goal:** Feature exists behind premium gate with "Coming soon" UI.
+**Goal:** Final pre-launch quality gate. All four canonical journeys verified; em dash sweep;
+AFSL compliance check; launch checklist produced.
 
-| File | Change |
+| Deliverable | Status |
 |---|---|
-| `src/SnapshotsPanel.jsx` | New file — stub UI: "Plan snapshots coming soon." |
-| `src/ImportPanel.jsx` | New file — stub UI: "CSV import coming soon." |
+| Em dash sweep (all user-facing copy) | DONE — 80+ em dashes replaced across 12 source files |
+| AFSL language review | DONE — "plan", "improve", "recommended", "opportunities" removed from regulated contexts |
+| Font size audit | DONE — small labels bumped to readable sizes on desktop |
+| Unit test suite | DONE — 223 tests, all passing |
+| `LAUNCH_CHECKLIST.md` | DONE — manual pre-launch steps + 4 canonical journey test scripts |
+| `IMPLEMENTATION_PLAN.md` updated | DONE — all phases marked complete |
 
-### Phase 10 — Post-launch refactors
-
-These do not block launch:
-- Update `CLAUDE.md` to reflect current state (App.jsx line count, Supabase schema, Stripe setup)
-- Consider App.jsx split if it grows beyond 4000 lines
-- Apple Sign In (requires Apple developer account + Supabase provider config)
-- Multi-plan support (separate planning session rows per user)
+**Post-launch roadmap (does not block launch):**
+- CSV export (featureId: `csv_export`)
+- Snapshots / version history
+- CSV import
+- Multi-plan support (requires schema migration)
+- Apple Sign In (requires Apple developer account)
+- App.jsx split if file grows beyond 4000 lines
 
 ---
 

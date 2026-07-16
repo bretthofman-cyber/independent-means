@@ -188,7 +188,7 @@ export default function ImprovePlanModal({ data, engine, onClose, onOpenStrategy
                   fontSize: 13, color: "#6B6655",
                   lineHeight: 1.6, marginBottom: 16,
                 }}>
-                  Model each opportunity interactively using your numbers — move a slider and watch the outcome update in real time.
+                  Model each opportunity interactively using your numbers. Move a slider and watch the outcome update in real time.
                 </div>
                 <button
                   onClick={() => { onClose(); onOpenStrategyCentre?.(); }}

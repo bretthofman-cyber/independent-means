@@ -67,7 +67,7 @@ export const LIFE_EVENT_TYPES = {
     durable: false,
     fields: ["person", "year", "amount", "pauseMonths"],
     defaults: { amount: "", pauseMonths: "6" },
-    hint: "Lump sum added to liquid assets. Income reduced proportionally for the pause period. Tax on genuine redundancy payments is not modelled — this is illustrative only.",
+    hint: "Lump sum added to liquid assets. Income reduced proportionally for the pause period. Tax on genuine redundancy payments is not modelled. This is illustrative only.",
   },
   extra_repayment: {
     label: "Lump-sum mortgage repayment",

@@ -179,7 +179,7 @@ function LoginScreen() {
             Know your<br /><span style={{ color: "#2E4A3D" }}>retirement number.</span>
           </h1>
           <p style={{ fontSize: 18, color: "#6B6655", lineHeight: 1.65, margin: "0 0 40px", maxWidth: 520, marginLeft: "auto", marginRight: "auto" }}>
-            Project your super, model your net worth, and see the probability your money lasts as long as you do — built specifically for Australian households.
+            Project your super, model your net worth, and see the probability your money lasts as long as you do, built specifically for Australian households.
           </p>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <GoogleButton onClick={signInWithGoogle} loading={loading} />
@@ -192,12 +192,12 @@ function LoginScreen() {
       <section style={{ padding: "0 24px 80px" }}>
         <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 20 }}>
           {[
-            { icon: "📈", title: "Super projection", body: "See your super balance at retirement across three market scenarios — base, conservative, and aggressive — with contributions tax modelled at 15%." },
+            { icon: "📈", title: "Super projection", body: "See your super balance at retirement across three market scenarios (base, conservative, and aggressive) with contributions tax modelled at 15%." },
             { icon: "💰", title: "Net worth trajectory", body: "Year-by-year net worth from today to life expectancy, combining super, property, savings, and investments in one view." },
-            { icon: "🎯", title: "Retirement probability", body: "Monte Carlo simulation across 1,000 scenarios gives you a probability your money lasts to your assumed life expectancy — not just a point estimate." },
+            { icon: "🎯", title: "Retirement probability", body: "Monte Carlo simulation across 1,000 scenarios gives you a probability your money lasts to your assumed life expectancy, not just a point estimate." },
             { icon: "🏠", title: "Property & debt", body: "Model multiple investment properties, negative gearing, P&I vs IO loans, and debt-free projections alongside your retirement picture." },
-            { icon: "📋", title: "Tax position", body: "Household tax estimated with LITO, Medicare Levy, MLS, HECS, Division 293, franking credits, and salary sacrifice — updated for FY2026-27." },
-            { icon: "📄", title: "Action plan", body: "A categorised summary of your key modelling insights across retirement, super, tax, property, and cashflow — built from your numbers, not generic advice." },
+            { icon: "📋", title: "Tax position", body: "Household tax estimated with LITO, Medicare Levy, MLS, HECS, Division 293, franking credits, and salary sacrifice, updated for FY2026-27." },
+            { icon: "📄", title: "Action plan", body: "A categorised summary of your key modelling insights across retirement, super, tax, property, and cashflow, built from your numbers, not generic advice." },
           ].map(f => (
             <div key={f.title} style={{ background: "#FBFAF6", border: "1px solid #E8E3D9", borderRadius: 14, padding: "28px 24px" }}>
               <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
@@ -243,8 +243,8 @@ function LoginScreen() {
       <section style={{ padding: "72px 24px" }}>
         <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 24 }}>
           {[
-            { title: "Deterministic, not AI-estimated", body: "Every projection is calculated by a rules-based engine using your actual inputs — not estimated by an AI. The maths is yours to interrogate." },
-            { title: "Australian tax law, FY2026-27", body: "Concessional caps, LITO, Medicare Levy Surcharge, Division 293, HECS, Age Pension means testing, and ABP drawdown rates — all current." },
+            { title: "Deterministic, not AI-estimated", body: "Every projection is calculated by a rules-based engine using your actual inputs, not estimated by an AI. The maths is yours to interrogate." },
+            { title: "Australian tax law, FY2026-27", body: "Concessional caps, LITO, Medicare Levy Surcharge, Division 293, HECS, Age Pension means testing, and ABP drawdown rates, all current." },
             { title: "Your data stays yours", body: "All calculations run in your browser. Your data is saved only to your account and never used for advertising, sold, or shared with third parties." },
             { title: "General information only", body: "Independent Means is a modelling tool, not a licensed financial adviser. Every output is a scenario estimate, not a recommendation." },
           ].map(t => (

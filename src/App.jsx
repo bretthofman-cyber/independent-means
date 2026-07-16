@@ -192,7 +192,7 @@ function Stage1({ data, set }) {
               Welcome to Independent Means
             </div>
             <div style={{ fontSize: 12, color: "#6B6655", lineHeight: 1.6 }}>
-              A 7-step modelling tool for Australian households. Enter your details to project super, net worth, retirement funding probability, and cashflow — all calculated locally, never sent anywhere.
+              A 7-step modelling tool for Australian households. Enter your details to project super, net worth, retirement funding probability, and cashflow, all calculated locally, never sent anywhere.
             </div>
           </div>
         </div>
@@ -345,7 +345,7 @@ function PropertyCard({ ip, onChange, onClone, onRemove, isCouple }) {
                 </Field>
                 {showInfo && (
                   <div style={{ fontSize: 12, color: "#5a6e5e", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, padding: "8px 12px", marginBottom: 16 }}>
-                    Interest only until <strong>{expiryYear}</strong> — reverts to P&I repayments from {expiryYear} until loan end in <strong>{endYear}</strong>.
+                    Interest only until <strong>{expiryYear}</strong>. Reverts to P&amp;I repayments from {expiryYear} until loan end in <strong>{endYear}</strong>.
                   </div>
                 )}
               </>
@@ -356,7 +356,7 @@ function PropertyCard({ ip, onChange, onClone, onRemove, isCouple }) {
             <Field label="Weekly rent"><Input value={ip.weeklyRent} onChange={v => upd("weeklyRent", v)} placeholder="550" prefix="$" /></Field>
             <Field label="Vacancy rate" hint="Default 4%"><Input value={ip.vacancyRate} onChange={v => upd("vacancyRate", v)} placeholder="4" suffix="%" /></Field>
           </TwoCol>
-          <Field label="Management fee" hint="% of gross rent — default 8%">
+          <Field label="Management fee" hint="% of gross rent (default 8%)">
             <Input value={ip.managementFee} onChange={v => upd("managementFee", v)} placeholder="8" suffix="%" />
           </Field>
           <SectionDivider label="Annual expenses" />
@@ -365,10 +365,10 @@ function PropertyCard({ ip, onChange, onClone, onRemove, isCouple }) {
             <Field label="Landlord insurance"><Input value={ip.insurance} onChange={v => upd("insurance", v)} placeholder="1,500" prefix="$" /></Field>
           </TwoCol>
           <TwoCol>
-            <Field label="Body corp — admin" hint="Operating fund levy">
+            <Field label="Body corp: admin" hint="Operating fund levy">
               <Input value={ip.bodyCorpAdmin} onChange={v => upd("bodyCorpAdmin", v)} placeholder="0" prefix="$" />
             </Field>
-            <Field label="Body corp — capital" hint="Sinking fund levy">
+            <Field label="Body corp: capital" hint="Sinking fund levy">
               <Input value={ip.bodyCorpCapital} onChange={v => upd("bodyCorpCapital", v)} placeholder="0" prefix="$" />
             </Field>
           </TwoCol>
@@ -434,7 +434,7 @@ function Stage4({ data, set }) {
           <TwoCol>
             <Field label="PPOR estimated value"><Input value={data.ppOrValue} onChange={v => set("ppOrValue", v)} placeholder="850,000" prefix="$" /></Field>
             {isCouple ? (
-              <Field label="Your ownership share" hint="% you own — remainder is partner's">
+              <Field label="Your ownership share" hint="% you own; the remainder is your partner's">
                 <Input value={data.ppOrOwnershipPct} onChange={v => set("ppOrOwnershipPct", v)} placeholder="50" suffix="%" />
               </Field>
             ) : <div />}
@@ -452,10 +452,10 @@ function Stage4({ data, set }) {
               <Input value={data.mortgageTenure} onChange={v => set("mortgageTenure", v)} placeholder="30" suffix="yrs" type="number" />
             </Field>
           </TwoCol>
-          <Field label="Mortgage start year" hint="Year the loan was taken out — used to calculate remaining term">
+          <Field label="Mortgage start year" hint="Year the loan was taken out; used to calculate remaining term">
             <Input value={data.mortgageStartYear} onChange={v => set("mortgageStartYear", v)} placeholder={String(new Date().getFullYear())} type="number" />
           </Field>
-          <Field label="Offset account balance" hint="Reduces effective mortgage interest — enter your current offset balance">
+          <Field label="Offset account balance" hint="Reduces effective mortgage interest. Enter your current offset balance">
             <Input value={data.ppOrOffsetBalance} onChange={v => set("ppOrOffsetBalance", v)} placeholder="0" prefix="$" />
           </Field>
           {data.loanType === "io" && (() => {
@@ -469,7 +469,7 @@ function Stage4({ data, set }) {
                 </Field>
                 {showInfo && (
                   <div style={{ fontSize: 12, color: "#5a6e5e", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, padding: "8px 12px", marginBottom: 16 }}>
-                    Interest only until <strong>{expiryYear}</strong> — reverts to P&I repayments from {expiryYear} until loan end in <strong>{endYear}</strong>.
+                    Interest only until <strong>{expiryYear}</strong>. Reverts to P&amp;I repayments from {expiryYear} until loan end in <strong>{endYear}</strong>.
                   </div>
                 )}
               </>
@@ -485,7 +485,7 @@ function Stage4({ data, set }) {
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13, fontWeight: 500, color: "#21241E", marginBottom: 2 }}>Enable debt recycling</div>
                 <div style={{ fontSize: 11, color: "#8A8270", lineHeight: 1.5 }}>
-                  Converts non-deductible mortgage interest to deductible investment debt as you repay and redraw. Modelled as an annual tax saving added to liquid savings. General information only — consult a tax adviser before implementing.
+                  Converts non-deductible mortgage interest to deductible investment debt as you repay and redraw. Modelled as an annual tax saving added to liquid savings. General information only. Consult a tax adviser before implementing.
                 </div>
               </div>
               <button
@@ -598,7 +598,7 @@ function SalarySacrificeRow({ label, grossIncome, sgRate, ssValue, ssMaxed, onSs
       {gross > 0 && (
         <div style={{ fontSize: 11, color: isOverCap ? "#9a3922" : "#8A8270", marginTop: 5, lineHeight: 1.5 }}>
           {isOverCap
-            ? `Warning: ${currency(currentSS)}/yr exceeds the ${currency(capRoom)}/yr cap room — excess concessional contributions are taxed at your marginal rate (less a 15% offset).`
+            ? `Warning: ${currency(currentSS)}/yr exceeds the ${currency(capRoom)}/yr cap room. Excess concessional contributions are taxed at your marginal rate (less a 15% offset).`
             : `SG ${currency(Math.round(sg))}/yr · cap room ${currency(Math.round(capRoom))}/yr · cap $30,000/yr`}
         </div>
       )}
@@ -658,7 +658,7 @@ function Stage5({ data, set }) {
       </div>
       <PremiumGate featureId="carry_forward_cap" label="Carry-forward contributions">
         <TwoCol>
-          <Field label="Your carry-forward cap available" hint="From ATO online services — leave blank if not applicable">
+          <Field label="Your carry-forward cap available" hint="From ATO online services; leave blank if not applicable">
             <Input value={data.carryForwardCap} onChange={v => set("carryForwardCap", v)} placeholder="0" prefix="$" />
           </Field>
           {data.hasPartner === "yes" && (
@@ -671,11 +671,11 @@ function Stage5({ data, set }) {
 
       <SectionDivider label="Franking credits" />
       <div style={{ fontSize: 12, color: "#8A8270", marginBottom: 12, lineHeight: 1.5 }}>
-        Annual franking credits from Australian shares or managed funds. These offset your income tax — any excess is refunded by the ATO. Check your dividend statements or last year's tax return.
+        Annual franking credits from Australian shares or managed funds. These offset your income tax; any excess is refunded by the ATO. Check your dividend statements or last year's tax return.
       </div>
       <PremiumGate featureId="franking_credits" label="Franking credits">
         <TwoCol>
-          <Field label="Your annual franking credits" hint="From dividends — shown on dividend statements">
+          <Field label="Your annual franking credits" hint="From dividends; shown on dividend statements">
             <Input value={data.frankingCredits} onChange={v => set("frankingCredits", v)} placeholder="0" prefix="$" />
           </Field>
           {data.hasPartner === "yes" && (
@@ -688,9 +688,9 @@ function Stage5({ data, set }) {
 
       <SectionDivider label="Life & disability insurance" />
       <div style={{ fontSize: 12, color: "#8A8270", marginBottom: 14, lineHeight: 1.6 }}>
-        Insurance held inside super is paid from your fund balance — it reduces super accumulation but doesn't affect take-home pay. Insurance outside super is a direct cashflow cost and also appears in Stage 2 — Income &amp; Cashflow.
+        Insurance held inside super is paid from your fund balance. It reduces super accumulation but doesn't affect take-home pay. Insurance outside super is a direct cashflow cost and also appears in Stage 2, Income &amp; Cashflow.
       </div>
-      <Field label="Your annual insurance premium" hint="Total for life/death + TPD covers — check your super fund statement or policy schedule">
+      <Field label="Your annual insurance premium" hint="Total for life/death + TPD covers; check your super fund statement or policy schedule">
         <Input value={data.insurancePremium} onChange={v => set("insurancePremium", v)} placeholder="0" prefix="$" />
       </Field>
       {parseFloat(String(data.insurancePremium || "").replace(/,/g, "")) > 0 && (
@@ -703,13 +703,13 @@ function Stage5({ data, set }) {
         <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#2E4A3D", lineHeight: 1.5 }}>
           <span style={{ flexShrink: 0, marginTop: 1 }}>↗</span>
           <span>
-            This outside-super premium is synced to <strong>Income &amp; Cashflow (Stage 2)</strong> — it appears there as a cashflow expense. Update it in either place.
+            This outside-super premium is synced to <strong>Income &amp; Cashflow (Stage 2)</strong>. It appears there as a cashflow expense. Update it in either place.
           </span>
         </div>
       )}
       {data.hasPartner === "yes" && (
         <>
-          <Field label={`${data.partnerName || "Partner"}'s annual insurance premium`} hint="Total for life/death + TPD — from their super fund statement or policy">
+          <Field label={`${data.partnerName || "Partner"}'s annual insurance premium`} hint="Total for life/death + TPD; from their super fund statement or policy">
             <Input value={data.partnerInsurancePremium} onChange={v => set("partnerInsurancePremium", v)} placeholder="0" prefix="$" />
           </Field>
           {parseFloat(String(data.partnerInsurancePremium || "").replace(/,/g, "")) > 0 && (
@@ -730,7 +730,7 @@ function Stage5({ data, set }) {
       )}
 
       <SectionDivider label="Retirement target & life events" />
-      <Field label="Target annual retirement spending" hint="In today's dollars — what lifestyle do you want in retirement?">
+      <Field label="Target annual retirement spending" hint="In today's dollars. What lifestyle do you want in retirement?">
         <Input value={data.targetRetirementSpending} onChange={v => set("targetRetirementSpending", v)} placeholder="65,000" prefix="$" />
       </Field>
 
@@ -842,7 +842,7 @@ function LifeEventsPanel({ data, set }) {
                         <Select
                           value={evt.heldOver12Months || "yes"}
                           onChange={v => updateEvent(evt.id, "heldOver12Months", v)}
-                          options={[{ value: "yes", label: "Yes — 50% discount applies" }, { value: "no", label: "No — full gain taxable" }]}
+                          options={[{ value: "yes", label: "Yes (50% discount applies)" }, { value: "no", label: "No (full gain taxable)" }]}
                         />
                       </Field>
                     )}

@@ -6,8 +6,8 @@ export default function TrialBanner({ isTrial, trialDaysLeft, onOpenPricing }) {
   const urgent = trialDaysLeft <= 3;
 
   const daysText = trialDaysLeft === 0
-    ? "Premium trial — expires today"
-    : `Premium trial — ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left`;
+    ? "Premium trial: expires today"
+    : `Premium trial: ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} left`;
 
   return (
     <div style={{

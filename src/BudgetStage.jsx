@@ -238,7 +238,7 @@ export function CashflowCalendar({ items, netMonthly, startingCash = 0, compact 
           <div>
             <div style={{ fontSize: 12, fontWeight: 500, color: "#21241E", marginBottom: 2 }}>Unlock cashflow calendar</div>
             <div style={{ fontSize: 11, color: "#8A8270" }}>
-              Set <strong style={{ color: "#2E4A3D" }}>Yr</strong> or <strong style={{ color: "#2E4A3D" }}>Qtr</strong> on any expense and pick a month — see exactly which months run tight.
+              Set <strong style={{ color: "#2E4A3D" }}>Yr</strong> or <strong style={{ color: "#2E4A3D" }}>Qtr</strong> on any expense and pick a month to see exactly which months run tight.
             </div>
           </div>
         </div>
@@ -410,7 +410,7 @@ function BudgetItem({ item, onUpdate, onRemove }) {
   const freqBtn = (
     <button
       onClick={() => onUpdate(item.id, { frequency: nextFreq, month: nextFreq === "monthly" ? null : item.month })}
-      title={`Frequency: ${freq} — click to cycle Mo → Qtr → Yr`}
+      title={`Frequency: ${freq}. Click to cycle Mo → Qtr → Yr`}
       style={{
         flexShrink: 0, padding: "6px 9px", border: "1.5px solid",
         borderColor: isNonMonthly ? "#2E4A3D" : "#D8D2C4", borderRadius: 7,
@@ -940,7 +940,7 @@ export default function Stage2({ data, setMany }) {
       </TwoCol>
 
       <SectionDivider label="Life & disability insurance" />
-      <Field label={`${isCouple ? "Your " : ""}life / TPD insurance — annual premium (outside super)`} hint="Out-of-pocket cost paid from take-home pay — enter 0 if held fully inside super">
+      <Field label={`${isCouple ? "Your " : ""}life / TPD insurance: annual premium (outside super)`} hint="Out-of-pocket cost paid from take-home pay; enter 0 if held fully inside super">
         <Input
           value={data.insurancePremium || ""}
           onChange={v => setMany({ insurancePremium: v, insuranceInSuper: "no" })}
@@ -956,7 +956,7 @@ export default function Stage2({ data, setMany }) {
             <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#FBF8F2", border: "1px solid #E4D8BC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#6B5830", lineHeight: 1.5 }}>
               <span style={{ flexShrink: 0, marginTop: 1 }}>⚠</span>
               <span>
-                This premium is currently set to <strong>inside super</strong> in Super &amp; Goals (Stage 5) — it won't appear as a cashflow expense here. Editing the amount above will switch it to outside super.
+                This premium is currently set to <strong>inside super</strong> in Super &amp; Goals (Stage 5). It won't appear as a cashflow expense here. Editing the amount above will switch it to outside super.
               </span>
             </div>
           );
@@ -965,7 +965,7 @@ export default function Stage2({ data, setMany }) {
           <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#2E4A3D", lineHeight: 1.5 }}>
             <span style={{ flexShrink: 0, marginTop: 1 }}>↗</span>
             <span>
-              Synced to <strong>Super &amp; Goals (Stage 5)</strong> — the same amount appears there as an outside-super premium. Update it in either place.
+              Synced to <strong>Super &amp; Goals (Stage 5)</strong>. The same amount appears there as an outside-super premium. Update it in either place.
             </span>
           </div>
         );
@@ -973,7 +973,7 @@ export default function Stage2({ data, setMany }) {
 
       {isCouple && (
         <>
-          <Field label={`${data.partnerName || "Partner"}'s life / TPD insurance — annual premium (outside super)`} hint="Out-of-pocket cost paid from take-home pay">
+          <Field label={`${data.partnerName || "Partner"}'s life / TPD insurance: annual premium (outside super)`} hint="Out-of-pocket cost paid from take-home pay">
             <Input
               value={data.partnerInsurancePremium || ""}
               onChange={v => setMany({ partnerInsurancePremium: v, partnerInsuranceInSuper: "no" })}
@@ -998,7 +998,7 @@ export default function Stage2({ data, setMany }) {
               <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#2E4A3D", lineHeight: 1.5 }}>
                 <span style={{ flexShrink: 0, marginTop: 1 }}>↗</span>
                 <span>
-                  Synced to <strong>Super &amp; Goals (Stage 5)</strong> — update in either place.
+                  Synced to <strong>Super &amp; Goals (Stage 5)</strong>. Update it in either place.
                 </span>
               </div>
             );
@@ -1014,7 +1014,7 @@ export default function Stage2({ data, setMany }) {
         <Toggle
           value={data.privateHealthInsurance}
           onChange={v => setMany({ privateHealthInsurance: v })}
-          options={[{ value: "yes", label: "Yes — have cover" }, { value: "no", label: "No cover" }]}
+          options={[{ value: "yes", label: "Yes, have cover" }, { value: "no", label: "No cover" }]}
         />
       </Field>
       {isCouple && (
@@ -1022,7 +1022,7 @@ export default function Stage2({ data, setMany }) {
           <Toggle
             value={data.partnerPrivateHealthInsurance}
             onChange={v => setMany({ partnerPrivateHealthInsurance: v })}
-            options={[{ value: "yes", label: "Yes — have cover" }, { value: "no", label: "No cover" }]}
+            options={[{ value: "yes", label: "Yes, have cover" }, { value: "no", label: "No cover" }]}
           />
         </Field>
       )}

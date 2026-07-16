@@ -31,7 +31,7 @@ const ASSUMPTION_RATIONALE = {
   },
   rentalGrowth: {
     label: "Rental income growth (% p.a.)",
-    source: "Base case of 3.0% reflects CPI plus modest real growth — consistent with long-run rental market trends per ABS rental price indexes. Conservative aligns with CPI only; Aggressive reflects tight rental market conditions.",
+    source: "Base case of 3.0% reflects CPI plus modest real growth, consistent with long-run rental market trends per ABS rental price indexes. Conservative aligns with CPI only; Aggressive reflects tight rental market conditions.",
   },
   safeWithdrawal: {
     label: "Safe withdrawal rate (% p.a.)",
@@ -403,7 +403,7 @@ function MetricsRow({ engine, data, div293Locked = false }) {
   const fireSub2   = metrics.fireNumber > 0 ? `at ${engine.assumptions?.safeWithdrawal ?? 4}% withdrawal rate` : null;
   const fireSub    = metrics.fireNumber > 0
     ? (metrics.projectedSuper >= metrics.fireNumber
-        ? `On track — super exceeds target`
+        ? `On track: super exceeds target`
         : `${currency(metrics.fireNumber - metrics.projectedSuper)} gap`)
     : "Enter spending target";
 
@@ -546,8 +546,8 @@ function MonteCarloCard({ data, engine }) {
   const desc  = isStrong
     ? `Modelling indicates a high likelihood of funding retirement to age ${data.lifeExpectancy || 90} under current assumptions`
     : isWatch
-    ? "Modelling shows some cashflow pressure in retirement under current assumptions — adjusting the spending target or scenario inputs will update this result"
-    : "Modelling indicates a high probability of asset depletion before assumed life expectancy — scenario inputs and spending target materially affect this result";
+    ? "Modelling shows some cashflow pressure in retirement under current assumptions. Adjusting the spending target or scenario inputs will update this result"
+    : "Modelling indicates a high probability of asset depletion before assumed life expectancy. Scenario inputs and spending target materially affect this result";
 
   return (
     <div style={{ background: bg, border: `1.5px solid ${bdr}`, borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
@@ -564,9 +564,9 @@ function MonteCarloCard({ data, engine }) {
 
       <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
         <div>
-          <div style={{ fontSize: 10, color: "#8A8270", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>Super at retirement — range</div>
+          <div style={{ fontSize: 10, color: "#8A8270", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>Super at retirement: range</div>
           <div style={{ fontSize: 13, fontWeight: 500, color: "#21241E" }}>
-            {currency(retirementBalance.p10)} — {currency(retirementBalance.p90)}
+            {currency(retirementBalance.p10)} to {currency(retirementBalance.p90)}
           </div>
           <div style={{ fontSize: 10, color: "#9DB0A1" }}>10th to 90th percentile</div>
         </div>
@@ -623,7 +623,7 @@ function MonteCarloFanChart({ engine, data }) {
     <div style={{ background: "#FBFAF6", border: "1.5px solid #ECE7DB", borderRadius: 12, padding: "14px 16px 8px", marginBottom: 20 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8270" }}>
-          Super balance — probability fan
+          Super balance: probability fan
         </div>
         <div style={{ display: "flex", gap: 12, fontSize: 10, color: "#8A8270", flexWrap: "wrap" }}>
           <span style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -928,7 +928,7 @@ function ScenarioComparisonRow({ data }) {
       {/* Overlaid net-worth trajectories */}
       {allAges.length > 2 && (
         <div style={{ background: "#FBFAF6", border: "1.5px solid #ECE7DB", borderRadius: 12, padding: "10px 14px", marginBottom: 10 }}>
-          <div style={{ fontSize: 10, color: "#9DB0A1", marginBottom: 4 }}>Net worth trajectory — all scenarios</div>
+          <div style={{ fontSize: 10, color: "#9DB0A1", marginBottom: 4 }}>Net worth trajectory: all scenarios</div>
           <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%" }}>
             {allTrajectories.map((traj, idx) => {
               const color = SCENS[idx].color;
@@ -1091,8 +1091,8 @@ function AnalysisSummary({ data, engine }) {
     parts.push(pos + ".");
     if (hasSuperData && m) {
       parts.push(m.onTrack
-        ? `Under the ${scenarioLabel} scenario, super is projected to reach ${currency(m.projectedSuper)} at age ${retireAge} — ${currency(m.superSurplus)} ahead of the modelled retirement target.`
-        : `Under the ${scenarioLabel} scenario, super is projected to reach ${currency(m.projectedSuper)} at age ${retireAge} — ${currency(Math.abs(m.superSurplus))} below what's needed to fund the retirement spending target entered.`);
+        ? `Under the ${scenarioLabel} scenario, super is projected to reach ${currency(m.projectedSuper)} at age ${retireAge}, ${currency(m.superSurplus)} ahead of the modelled retirement target.`
+        : `Under the ${scenarioLabel} scenario, super is projected to reach ${currency(m.projectedSuper)} at age ${retireAge}, ${currency(Math.abs(m.superSurplus))} below what's needed to fund the retirement spending target entered.`);
     }
     sections.push({ title: "Financial position", color: "#2E4A3D", text: parts.join(" ") });
   }
@@ -1108,7 +1108,7 @@ function AnalysisSummary({ data, engine }) {
     }
     parts.push(cf);
     if (tightMonths.length > 0) {
-      parts.push(`Watch ${tightMonths.map(r => r.short).join(", ")} — ${tightMonths.length === 1 ? "that month sees" : "those months see"} lump-sum expenses that tighten cashflow against the monthly run-rate.`);
+      parts.push(`Watch ${tightMonths.map(r => r.short).join(", ")}: ${tightMonths.length === 1 ? "that month sees" : "those months see"} lump-sum expenses that tighten cashflow against the monthly run-rate.`);
     }
     sections.push({ title: "Income & cashflow", color: "#2a5480", text: parts.join(" ") });
   }
@@ -1120,17 +1120,17 @@ function AnalysisSummary({ data, engine }) {
     const p2 = ht.person2;
     let taxLine = couple && p2
       ? `${firstName || "You"} pays ${currency(p1.totalTax)}/yr tax (${Math.round(p1.effectiveRate * 100)}% effective) on ${currency(p1.taxableIncome)} taxable income; ${partnerFirstName} pays ${currency(p2.totalTax)}/yr (${Math.round(p2.effectiveRate * 100)}%) on ${currency(p2.taxableIncome)}.`
-      : `Estimated income tax is ${currency(p1.totalTax)}/year — ${Math.round(p1.effectiveRate * 100)}% effective rate on ${currency(p1.taxableIncome)} taxable income.`;
+      : `Estimated income tax is ${currency(p1.totalTax)}/year, a ${Math.round(p1.effectiveRate * 100)}% effective rate on ${currency(p1.taxableIncome)} taxable income.`;
     parts.push(taxLine);
     if (p1.mls > 0 || (p2?.mls ?? 0) > 0) {
       const mlsAmount = p1.mls + (p2?.mls ?? 0);
-      parts.push(`Medicare Levy Surcharge of ${currency(mlsAmount)}/yr is included in the tax model — it applies when no hospital-level private health cover is held and income exceeds the MLS threshold.`);
+      parts.push(`Medicare Levy Surcharge of ${currency(mlsAmount)}/yr is included in the tax model. It applies when no hospital-level private health cover is held and income exceeds the MLS threshold.`);
     }
     if (p1.hecsRepayment > 0 || (p2?.hecsRepayment ?? 0) > 0) {
       parts.push(`HECS-HELP compulsory repayments total ${currency(p1.hecsRepayment + (p2?.hecsRepayment ?? 0))}/yr, deducted automatically via the tax system.`);
     }
     if (p1.division293 > 0 || (p2?.division293 ?? 0) > 0) {
-      parts.push(`Division 293 tax of ${currency(p1.division293 + (p2?.division293 ?? 0))}/yr applies — income plus super contributions exceed $250k.`);
+      parts.push(`Division 293 tax of ${currency(p1.division293 + (p2?.division293 ?? 0))}/yr applies (income plus super contributions exceed $250k).`);
     }
     if (ht.negativeGearingBenefit > 0) {
       parts.push(`Negative gearing on investment property reduces household tax by ${currency(ht.negativeGearingBenefit)}/yr.`);
@@ -1147,17 +1147,17 @@ function AnalysisSummary({ data, engine }) {
         ? `, inflated at ${inf}% p.a. over ${yearsToRetire} ${yearsToRetire === 1 ? "year" : "years"}`
         : "";
       const spendSentence = additiveGoalAmt > 0
-        ? `Targeting retirement from age ${retireAge}, spending ${currency(dd.futureSpending)}/year — ${currency(baseSpend)}/year base target plus ${currency(additiveGoalAmt)}/year in additional goal spending (in today's dollars${inflationNote}).`
+        ? `Targeting retirement from age ${retireAge}, spending ${currency(dd.futureSpending)}/year: ${currency(baseSpend)}/year base target plus ${currency(additiveGoalAmt)}/year in additional goal spending (in today's dollars${inflationNote}).`
         : `Targeting retirement from age ${retireAge}, spending ${currency(dd.futureSpending)}/year (${currency(baseSpend)}/year in today's dollars${inflationNote}).`;
       parts.push(spendSentence);
       if (m?.lastsToLifeExpectancy) {
-        parts.push(`Projected super of ${currency(m.projectedSuper)} is sufficient to fund spending all the way to age ${lifeExp} — the full life expectancy modelled.`);
+        parts.push(`Projected super of ${currency(m.projectedSuper)} is sufficient to fund spending all the way to age ${lifeExp}, the full life expectancy modelled.`);
       } else if (m?.depletionAge) {
-        parts.push(`This scenario projects super of ${currency(m.projectedSuper)} exhausted at age ${m.depletionAge} — ${m.depletionAge - retireAge} years into retirement. The modelled gap is ${currency(Math.abs(m?.superSurplus || 0))}. Adjusting the scenario assumptions, contributions, or spending target will change this outcome.`);
+        parts.push(`This scenario projects super of ${currency(m.projectedSuper)} exhausted at age ${m.depletionAge}, ${m.depletionAge - retireAge} years into retirement. The modelled gap is ${currency(Math.abs(m?.superSurplus || 0))}. Adjusting the scenario assumptions, contributions, or spending target will change this outcome.`);
       }
       if (mc) {
         const confidence = mc.successRate >= 85 ? "a strong result" : mc.successRate >= 70 ? "a zone worth monitoring" : "an area that needs attention";
-        parts.push(`Across 1,000 simulations, there's a ${mc.successRate}% probability of funding retirement fully to age ${lifeExp} — ${confidence}.`);
+        parts.push(`Across 1,000 simulations, there's a ${mc.successRate}% probability of funding retirement fully to age ${lifeExp} (${confidence}).`);
       }
     } else {
       const combinedNote = couple && n(data.partnerSuperBalance) > 0
@@ -1170,13 +1170,13 @@ function AnalysisSummary({ data, engine }) {
     const ap = engine?.agePension;
     if (ap) {
       if (ap.eligible && ap.estimatedAnnual > 0) {
-        parts.push(`Based on projected assets at retirement, there may be partial Age Pension eligibility of approximately ${currency(ap.estimatedAnnual)}/yr — primarily limited by the ${ap.limitingTest === "assets" ? "assets test" : "income test"}. This is illustrative only; actual entitlement requires Services Australia assessment.`);
+        parts.push(`Based on projected assets at retirement, there may be partial Age Pension eligibility of approximately ${currency(ap.estimatedAnnual)}/yr, primarily limited by the ${ap.limitingTest === "assets" ? "assets test" : "income test"}. This is illustrative only; actual entitlement requires Services Australia assessment.`);
       } else if (retireAge < 67) {
-        parts.push(`Age Pension becomes available from age 67 — a ${67 - retireAge}-year gap from planned retirement at ${retireAge} needs to be bridged by super and other savings.`);
+        parts.push(`Age Pension becomes available from age 67, a ${67 - retireAge}-year gap from planned retirement at ${retireAge} that needs to be bridged by super and other savings.`);
       }
     }
     if (m?.capExceeded) {
-      parts.push(`Projected super of ${currency(m.projectedSuper)} exceeds the Transfer Balance Cap ($1.9M) — the excess stays in accumulation phase (earnings taxed at 15%). Pension-phase structuring above the Transfer Balance Cap is a specialist area — an AFSL-licensed adviser can model strategies specific to your circumstances.`);
+      parts.push(`Projected super of ${currency(m.projectedSuper)} exceeds the Transfer Balance Cap ($1.9M). The excess stays in accumulation phase (earnings taxed at 15%). Pension-phase structuring above the Transfer Balance Cap is a specialist area; an AFSL-licensed adviser can model strategies specific to your circumstances.`);
     }
     sections.push({ title: "Superannuation & retirement", color: "#5a7840", text: parts.join(" ") });
   }
@@ -1187,7 +1187,7 @@ function AnalysisSummary({ data, engine }) {
       parts.push(mort.type === "io"
         ? mort.ioExpiryYear
           ? `The PPOR mortgage of ${currency(n(data.mortgageBalance))} is interest-only until ${mort.ioExpiryYear}, then reverts to P&I at ${currency(mort.piMonthlyPayment)}/month until ${mort.loanEndYear}.`
-          : `The PPOR mortgage of ${currency(n(data.mortgageBalance))} is interest-only — the principal doesn't reduce and will need to be managed before or at maturity.`
+          : `The PPOR mortgage of ${currency(n(data.mortgageBalance))} is interest-only; the principal doesn't reduce and will need to be managed before or at maturity.`
         : mort.debtFreeYear
           ? `The PPOR mortgage of ${currency(n(data.mortgageBalance))} is on track to be cleared by ${mort.debtFreeYear} (${mort.yearsToPayoff} years remaining at ${currency(mort.monthlyPayment)}/month), freeing up meaningful cashflow once gone.`
           : `Mortgage of ${currency(n(data.mortgageBalance))} is recorded.`);
@@ -1207,32 +1207,32 @@ function AnalysisSummary({ data, engine }) {
 
   const adviserPoints = [];
   if (hasSuperData && concCapHeadroom > 5000)
-    adviserPoints.push(`Salary sacrifice and concessional contributions — ${currency(Math.round(concCapHeadroom))} of unused cap this year`);
+    adviserPoints.push(`Salary sacrifice and concessional contributions: ${currency(Math.round(concCapHeadroom))} of unused cap this year`);
   if (hasSuperData && m && !m.onTrack && hasTarget)
-    adviserPoints.push(`Strategies to close the ${currency(Math.abs(m.superSurplus))} retirement gap — contributions timing, retirement age, or spending adjustments`);
+    adviserPoints.push(`Strategies to close the ${currency(Math.abs(m.superSurplus))} retirement gap: contributions timing, retirement age, or spending adjustments`);
   if (engine?.householdTax?.person1?.mls > 0 || engine?.householdTax?.person2?.mls > 0)
-    adviserPoints.push("Medicare Levy Surcharge — taking out hospital-level private health cover would eliminate this charge and may be cost-effective");
+    adviserPoints.push("Medicare Levy Surcharge: taking out hospital-level private health cover would eliminate this charge and may be cost-effective");
   if (engine?.householdTax?.person1?.division293 > 0 || engine?.householdTax?.person2?.division293 > 0)
-    adviserPoints.push("Division 293 tax — salary packaging strategies and super fund payment options for this high-income super tax");
+    adviserPoints.push("Division 293 tax: salary packaging strategies and super fund payment options for this high-income super tax");
   if (hasMortgage && mort?.type === "pi")
-    adviserPoints.push("Offset account vs extra repayments vs investing the surplus — the right call depends on your mortgage rate vs expected after-tax returns");
+    adviserPoints.push("Offset account vs extra repayments vs investing the surplus: the right call depends on your mortgage rate vs expected after-tax returns");
   if (hasMortgage && mort?.type === "io")
     adviserPoints.push(mort.ioExpiryYear
-      ? `Interest-only expiry in ${mort.ioExpiryYear} — plan for the payment step-up to ${currency(mort.piMonthlyPayment)}/month and whether to refinance or pay down principal before then`
-      : "Interest-only exit strategy — how to manage the transition when the IO period ends");
+      ? `Interest-only expiry in ${mort.ioExpiryYear}: plan for the payment step-up to ${currency(mort.piMonthlyPayment)}/month and whether to refinance or pay down principal before then`
+      : "Interest-only exit strategy: how to manage the transition when the IO period ends");
   if (hasCreditCard || hasPersonalLoan)
-    adviserPoints.push("High-interest debt elimination — repaying credit cards and personal loans typically beats investing the same money");
+    adviserPoints.push("High-interest debt elimination: repaying credit cards and personal loans typically beats investing the same money");
   if (hasHecs)
-    adviserPoints.push("HECS-HELP voluntary repayment — there's no interest charged, so it's rarely the priority, but it does affect borrowing capacity");
+    adviserPoints.push("HECS-HELP voluntary repayment: there's no interest charged, so it's rarely the priority, but it does affect borrowing capacity");
   if (existingIPs.length > 0)
-    adviserPoints.push("Investment property tax position — depreciation schedule, negative gearing benefits, and CGT implications on eventual sale");
+    adviserPoints.push("Investment property tax position: depreciation schedule, negative gearing benefits, and CGT implications on eventual sale");
   if (engine?.agePension?.estimatedAnnual > 0)
-    adviserPoints.push(`Age Pension strategies — assets test and income test thresholds, and how to structure drawdown to maximise the estimated ${currency(engine.agePension.estimatedAnnual)}/yr entitlement`);
+    adviserPoints.push(`Age Pension strategies: assets test and income test thresholds, and how to structure drawdown to maximise the estimated ${currency(engine.agePension.estimatedAnnual)}/yr entitlement`);
   if (m?.capExceeded)
-    adviserPoints.push("Transfer Balance Cap management — pension-phase drawdown structuring and super fund strategy above the $1.9M cap");
+    adviserPoints.push("Transfer Balance Cap management: pension-phase drawdown structuring and super fund strategy above the $1.9M cap");
   if (n(data.superBalance) > 0)
-    adviserPoints.push("Insurance review — life and income protection coverage inside and outside of super");
-  adviserPoints.push("Estate planning — will, super beneficiary nominations, and enduring power of attorney");
+    adviserPoints.push("Insurance review: life and income protection coverage inside and outside of super");
+  adviserPoints.push("Estate planning: will, super beneficiary nominations, and enduring power of attorney");
 
   const SectionBlock = ({ title, color, text }) => (
     <div style={{ marginBottom: 22 }}>
@@ -1395,7 +1395,7 @@ function AssumptionsRegister({ engine }) {
       ],
     },
     {
-      title: "Tax — FY2026–27",
+      title: "Tax: FY2026-27",
       rows: [
         { label: "Tax brackets", value: "0% / 15% / 30% / 37% / 45%", source: "ATO Individual Income Tax Rates FY2026-27 (Stage 3 cuts in effect)" },
         { label: "Medicare Levy", value: "2.0%", source: "ITAA 1936 s251R; standard levy rate" },
@@ -1430,9 +1430,9 @@ function AssumptionsRegister({ engine }) {
       title: "Monte Carlo simulation",
       rows: [
         { label: "Iterations", value: "1,000", source: "Standard financial planning practice; balances accuracy vs performance" },
-        { label: "Return volatility — Base", value: "±10%", source: "Approximate annual standard deviation for a 60/40 diversified portfolio" },
-        { label: "Return volatility — Conservative", value: "±8%", source: "Defensive allocation (higher bonds); lower variance" },
-        { label: "Return volatility — Aggressive", value: "±14%", source: "Growth tilt (higher equities); higher variance" },
+        { label: "Return volatility: Base", value: "±10%", source: "Approximate annual standard deviation for a 60/40 diversified portfolio" },
+        { label: "Return volatility: Conservative", value: "±8%", source: "Defensive allocation (higher bonds); lower variance" },
+        { label: "Return volatility: Aggressive", value: "±14%", source: "Growth tilt (higher equities); higher variance" },
         { label: "Success threshold", value: "Funds last to life expectancy", source: "Standard definition used across modelling tools" },
       ],
     },
@@ -1477,7 +1477,7 @@ function AssumptionsRegister({ engine }) {
             </div>
           ))}
           <div style={{ fontSize: 11, color: "#8A8270", lineHeight: 1.5, marginTop: 4, paddingTop: 12, borderTop: "1px solid #ECE7DB" }}>
-            Assumptions are reviewed periodically. Projections are illustrative — actual outcomes will differ. This is general information only and does not constitute financial advice.
+            Assumptions are reviewed periodically. Projections are illustrative. Actual outcomes will differ. This is general information only and does not constitute financial advice.
           </div>
         </div>
       )}
@@ -1604,9 +1604,9 @@ function AnalysisScreen({ data, set }) {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28 }}>
         {[
-          { key: "base", label: "Base — most likely case" },
-          { key: "conservative", label: "Conservative — stress test" },
-          { key: "aggressive", label: "Aggressive — upside case" },
+          { key: "base", label: "Base: most likely case" },
+          { key: "conservative", label: "Conservative: stress test" },
+          { key: "aggressive", label: "Aggressive: upside case" },
         ].map(s => (
           <ScenarioPanel
             key={s.key}

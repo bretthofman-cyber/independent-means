@@ -58,8 +58,8 @@ export function generateWarnings(data, engine) {
     const shortfall = lifeExp - m.depletionAge;
     add("critical", "DEPLETION",
       "Retirement funds projected to run out",
-      `This scenario projects assets exhausted at age ${m.depletionAge} — ${shortfall} year${shortfall !== 1 ? "s" : ""} before the life expectancy of ${lifeExp} entered.`,
-      "Key modelling levers are contribution rates, retirement date, spending target, and scenario assumptions — adjusting these inputs will update this projection."
+      `This scenario projects assets exhausted at age ${m.depletionAge}, ${shortfall} year${shortfall !== 1 ? "s" : ""} before the life expectancy of ${lifeExp} entered.`,
+      "Key modelling levers are contribution rates, retirement date, spending target, and scenario assumptions. Adjusting these inputs will update this projection."
     );
   }
 
@@ -67,7 +67,7 @@ export function generateWarnings(data, engine) {
     add("critical", "LOW_SUCCESS_PROB",
       "Less than 50% probability of funding full retirement",
       `Across ${mc.iterations.toLocaleString()} simulations, only ${mc.successRate}% project that assets last to age ${lifeExp}.`,
-      "Scenario inputs, contribution rates, and spending target are the primary modelling levers — adjusting these will update the projected outcome."
+      "Scenario inputs, contribution rates, and spending target are the primary modelling levers. Adjusting these will update the projected outcome."
     );
   }
 
@@ -105,7 +105,7 @@ export function generateWarnings(data, engine) {
   if (sg1 + ss1 > 30_000) {
     add("high", "CONC_CAP_BREACH",
       "Concessional contributions may exceed the $30,000 cap",
-      `Combined employer SG (${fmt(Math.round(sg1))}) and salary sacrifice (${fmt(p(data.salarySacrifice))}) total ${fmt(Math.round(sg1 + ss1))}/yr — above the $30,000 concessional cap.`,
+      `Combined employer SG (${fmt(Math.round(sg1))}) and salary sacrifice (${fmt(p(data.salarySacrifice))}) total ${fmt(Math.round(sg1 + ss1))}/yr, above the $30,000 concessional cap.`,
       "Excess concessional contributions are included in assessable income and taxed at the marginal rate, with a 15% offset. Verify actual contribution amounts with your super fund and payroll."
     );
   }
@@ -141,7 +141,7 @@ export function generateWarnings(data, engine) {
     add("high", "MODERATE_SUCCESS_PROB",
       "Moderate retirement success probability",
       `${mc.successRate}% of simulations project assets lasting to age ${lifeExp}. This scenario sits below a commonly targeted 70–85% confidence threshold.`,
-      "A range of modelling levers — contribution amounts, retirement timing, spending target, and investment return assumptions — may improve this outcome."
+      "A range of modelling levers (contribution amounts, retirement timing, spending target, and investment return assumptions) may improve this outcome."
     );
   }
 
@@ -260,8 +260,8 @@ export function generateWarnings(data, engine) {
     const fmt2 = v => "$" + Math.round(v).toLocaleString();
     add("info", "TTR_OPPORTUNITY",
       "Transition to Retirement (TTR) strategy available",
-      `At age ${ttr.currentAge} you are past preservation age (60) and still working. A TTR strategy could allow an additional ${fmt2(ttr.effectiveAdditionalSS)}/yr in salary sacrifice — saving an estimated ${fmt2(ttr.annualTaxBenefit)}/yr in income tax (${Math.round(ttr.marginalRate * 100)}% marginal rate vs 15% contributions tax). A TTR pension drawn from your super can offset the reduction in take-home pay. Over ${ttr.yearsOfTTR} years to retirement this could add approximately ${fmt2(ttr.cumulativeTaxBenefit)} in cumulative tax savings.`,
-      "TTR pensions are tax-free after age 60. The drawdown must be between 4% and 10% of the account balance each year. This is general information only — TTR structuring involves your specific fund's rules and your personal tax position. Consult a licensed financial adviser (AFSL holder) before implementing."
+      `At age ${ttr.currentAge} you are past preservation age (60) and still working. A TTR strategy could allow an additional ${fmt2(ttr.effectiveAdditionalSS)}/yr in salary sacrifice, saving an estimated ${fmt2(ttr.annualTaxBenefit)}/yr in income tax (${Math.round(ttr.marginalRate * 100)}% marginal rate vs 15% contributions tax). A TTR pension drawn from your super can offset the reduction in take-home pay. Over ${ttr.yearsOfTTR} years to retirement this could add approximately ${fmt2(ttr.cumulativeTaxBenefit)} in cumulative tax savings.`,
+      "TTR pensions are tax-free after age 60. The drawdown must be between 4% and 10% of the account balance each year. This is general information only. TTR structuring involves your specific fund's rules and your personal tax position. Consult a licensed financial adviser (AFSL holder) before implementing."
     );
   }
 
@@ -271,7 +271,7 @@ export function generateWarnings(data, engine) {
     add("info", "DEBT_RECYCLING",
       "Debt recycling modelled",
       `Debt recycling is enabled. The annual tax saving from deductible investment debt is added to projected liquid savings each year until retirement or the mortgage is repaid (mortgage rate: ${mortgageRate}%).`,
-      "Debt recycling does not reduce your mortgage balance — it converts non-deductible PPOR debt to deductible investment debt. The benefit is the tax deduction on investment interest. This strategy has specific legal and tax requirements; consult a qualified tax adviser."
+      "Debt recycling does not reduce your mortgage balance; it converts non-deductible PPOR debt to deductible investment debt. The benefit is the tax deduction on investment interest. This strategy has specific legal and tax requirements; consult a qualified tax adviser."
     );
   }
 
@@ -279,7 +279,7 @@ export function generateWarnings(data, engine) {
   if (hasTarget && m?.onTrack && m.lastsToLifeExpectancy && mc && mc.successRate >= 85) {
     add("info", "ON_TRACK",
       "Projected to fund full retirement under this scenario",
-      `Super and investments are projected to cover spending to age ${lifeExp} with a ${mc.successRate}% Monte Carlo success rate — above the 85% commonly cited threshold.`,
+      `Super and investments are projected to cover spending to age ${lifeExp} with a ${mc.successRate}% Monte Carlo success rate, above the 85% commonly cited threshold.`,
       "These are scenario estimates based on assumptions that may not reflect actual market conditions. This information does not constitute advice."
     );
   }
