@@ -1,6 +1,7 @@
 // ─── CLEARPATH — STAGE 2: INCOME & CASHFLOW (ITEM-LEVEL BUDGET) ──────────────
 
 import { useState, useRef, useEffect } from "react";
+import { exportBudgetXlsx } from "./exportBudgetXlsx.js";
 import { currency, Field, Input, Toggle, TwoCol, SectionDivider } from "./ui.jsx";
 
 // ─── CATEGORIES ──────────────────────────────────────────────────────────────
@@ -1025,6 +1026,27 @@ export default function Stage2({ data, setMany }) {
             options={[{ value: "yes", label: "Yes, have cover" }, { value: "no", label: "No cover" }]}
           />
         </Field>
+      )}
+
+      {items.length > 0 && (
+        <>
+          <SectionDivider label="Export" />
+          <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "4px 0 8px" }}>
+            <button
+              onClick={() => exportBudgetXlsx(data)}
+              style={{
+                padding: "10px 20px", border: "none", borderRadius: 10,
+                background: "#2E4A3D", color: "white",
+                fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+              }}
+            >
+              Download Annual Budget
+            </button>
+            <span style={{ fontSize: 11, color: "#9DB0A1", lineHeight: 1.4 }}>
+              12-month budget breakdown · Excel &amp; Google Sheets
+            </span>
+          </div>
+        </>
       )}
     </div>
   );

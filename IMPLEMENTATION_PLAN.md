@@ -24,7 +24,7 @@ Hide the carry-forward input fields in Stage 5 for free users (leaving value at 
 
 **Q5 — Debt recycling tier**
 Free or premium?
-**[REC]** PREMIUM. It is a structuring strategy, not a standard planning assumption.
+**[REC]** PREMIUM. It is a structuring strategy, not a standard modelling assumption.
 
 **Q6 — TTR (Transition to Retirement) — DOES NOT EXIST**
 The implementation brief says "this logic ALREADY EXISTS in the codebase — the job is to gate it, not build it." After a full audit: there is **no TTR logic anywhere** in `engine.js`, `App.jsx`, `warnings.js`, or `actionPlan.js`. This must be flagged before commitment.
@@ -456,4 +456,4 @@ The Strategy Centre copy must maintain the same general-information-only framing
 - No specific product recommendations (no "use fund X", no "buy ETF Y")
 - TTR stub: if we describe TTR, it must be framed as "a general strategy type available to some Australians — speak with a licensed adviser"
 
-The Stripe pricing page and upgrade modal must not describe Independent Means as financial advice. The subscription is for access to a planning tool, not advice.
+The Stripe pricing page and upgrade modal must not describe Independent Means as financial advice. The subscription is for access to a modelling tool, not advice.

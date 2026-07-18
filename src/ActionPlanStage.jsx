@@ -8,6 +8,7 @@ import { EntitlementContext } from "./useEntitlement.js";
 import PremiumGate from "./PremiumGate.jsx";
 import { FEATURES } from "./features.js";
 import { exportPlanDataCsv } from "./exportCsv.js";
+import { exportBudgetXlsx } from "./exportBudgetXlsx.js";
 
 const PRIORITY_STYLE = {
   1: { border: "#9a3922", bg: "#fdf3f0", dot: "#9a3922", label: "Attention" },
@@ -117,6 +118,10 @@ function ActionPlanScreen({ data }) {
             background: "#C2A06B", color: "#2A2113", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
           }}>Download PDF Report</button>
         </PremiumGate>
+        <button onClick={() => exportBudgetXlsx(derivedData)} style={{
+          padding: "10px 20px", border: "1.5px solid #2E4A3D", borderRadius: 10,
+          background: "#2E4A3D", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+        }}>Download Annual Budget</button>
         <PremiumGate featureId={FEATURES.CSV_EXPORT} label="Download data CSV">
           <button onClick={() => exportPlanDataCsv(derivedData)} style={{
             padding: "10px 20px", border: "1.5px solid #D8D2C4", borderRadius: 10,

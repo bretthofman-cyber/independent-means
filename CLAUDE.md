@@ -8,10 +8,10 @@
 
 ## What Is Independent Means?
 
-Australian financial planning and retirement modelling web app, live at **independentmeans.com.au**.  
-7-stage wizard → deterministic JS engine → AI-powered analysis via Anthropic API.
+Australian personal financial modelling and scenario analysis web app, live at **independentmeans.com.au**.  
+7-stage wizard → deterministic JS calculation engine → categorised observations and action points.
 
-**Key differentiator:** Calculations are deterministic (not AI-estimated). The AI interprets pre-calculated figures.
+**Key differentiator:** All projections are rules-based, calculated from the user's actual inputs. No AI features in the running app — this is a deliberate AFSL compliance decision (AI output risks being construed as financial advice).
 
 ---
 
@@ -24,7 +24,6 @@ Australian financial planning and retirement modelling web app, live at **indepe
 | Auth | Supabase (Google OAuth) |
 | Database | Supabase Postgres with Row Level Security |
 | Payments | Stripe Checkout + Customer Portal + webhooks |
-| AI | Anthropic API (`claude-sonnet-4-6`) via Vercel serverless |
 | Hosting | Vercel (auto-deploys on GitHub push to `main`) |
 | Fonts | Spectral (serif) + Albert Sans (body) |
 | Tests | Vitest — 254 tests, 12 files |
@@ -162,7 +161,7 @@ Trajectory row shape: `{ age, year, netWorth, superBalance, liquidAssets, proper
 
 ---
 
-## Planning Scenarios
+## Modelling Scenarios
 
 | Scenario | Return | Inflation | Property | Rental | SWR |
 |---|---|---|---|---|---|
@@ -187,13 +186,14 @@ Trajectory row shape: `{ age, year, netWorth, superBalance, liquidAssets, proper
 
 ---
 
-## AI Guardrails
+## Copy & Compliance Rules
 
 - Never present outputs as personal financial advice
 - Never recommend specific financial products
 - Always frame projections as modelling assumptions with uncertainty
 - Always suggest adviser review (AFSL holder) for tax, super strategy, debt, insurance, investment allocation
 - Standard disclaimer: *"General information only. Not personal financial advice."*
+- No AI features in the app — `api/chat.js` exists but is intentionally unwired (AFSL risk)
 
 ---
 
