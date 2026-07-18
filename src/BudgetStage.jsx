@@ -240,8 +240,8 @@ export function CashflowCalendar({ items, netMonthly, startingCash = 0, compact 
         }}>
           <span style={{ fontSize: 18, flexShrink: 0 }}>📅</span>
           <div>
-            <div style={{ fontSize: 12, fontWeight: 500, color: "#21241E", marginBottom: 2 }}>Unlock cashflow calendar</div>
-            <div style={{ fontSize: 11, color: "#8A8270" }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: "#21241E", marginBottom: 2 }}>Unlock cashflow calendar</div>
+            <div style={{ fontSize: 12, color: "#8A8270" }}>
               Set <strong style={{ color: "#2E4A3D" }}>Yr</strong> or <strong style={{ color: "#2E4A3D" }}>Qtr</strong> on any expense and pick a month to see exactly which months run tight.
             </div>
           </div>
@@ -432,7 +432,7 @@ function BudgetItem({ item, onUpdate, onRemove }) {
       <div style={{ padding: "8px 14px", borderBottom: "1px solid #F5F2EB", background: "white" }}>
         {/* Row 1: label + /mo equivalent + remove */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <div style={{ flex: 1, fontSize: 13, color: "#21241E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <div style={{ flex: 1, fontSize: 15, color: "#21241E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {item.label}
           </div>
           {monthly > 0 && (
@@ -476,7 +476,7 @@ function BudgetItem({ item, onUpdate, onRemove }) {
       display: "flex", alignItems: "center", gap: 8,
       padding: "7px 14px", borderBottom: "1px solid #F5F2EB", background: "white",
     }}>
-      <div style={{ flex: 1, fontSize: 13, color: "#21241E", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div style={{ flex: 1, fontSize: 15, color: "#21241E", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
         {item.label}
       </div>
       <div style={{ width: 100, flexShrink: 0 }}>
@@ -619,7 +619,7 @@ function AddItemPicker({ categoryKey, catLabel, onAdd, onCancel }) {
         }}>
           {/* Label + remove */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-            <div style={{ fontSize: 13, fontWeight: 500, color: "#21241E", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: 15, fontWeight: 500, color: "#21241E", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {item.label}
             </div>
             <button
@@ -753,7 +753,7 @@ function AddItemPicker({ categoryKey, catLabel, onAdd, onCancel }) {
       <button onClick={onCancel} style={{
         marginTop: 8, width: "100%", padding: "9px", border: "1.5px solid #D8D2C4",
         borderRadius: 10, background: "white", color: "#8A8270",
-        fontSize: 13, cursor: "pointer", fontFamily: "inherit",
+        fontSize: 15, cursor: "pointer", fontFamily: "inherit",
       }}>Cancel</button>
     </div>
   );
@@ -784,10 +784,10 @@ function BudgetCategory({ cat, items, onAddItems, onUpdateItem, onRemoveItem }) 
         }}
       >
         <span style={{ fontSize: 15, width: 22, textAlign: "center", flexShrink: 0 }}>{cat.icon}</span>
-        <div style={{ flex: 1, fontSize: 13, fontWeight: 500, color: "#21241E" }}>{cat.label}</div>
+        <div style={{ flex: 1, fontSize: 15, fontWeight: 500, color: "#21241E" }}>{cat.label}</div>
         {catTotal > 0 ? (
           <div style={{ textAlign: "right", flexShrink: 0 }}>
-            <div style={{ fontSize: 13, fontFamily: "Spectral, serif", color: "#21241E" }}>
+            <div style={{ fontSize: 15, fontFamily: "Spectral, serif", color: "#21241E" }}>
               {currency(catTotal)}<span style={{ fontSize: 10, color: "#9DB0A1", fontFamily: "DM Sans, sans-serif" }}>/mo</span>
             </div>
             {hasNonMonthly && (
@@ -960,7 +960,7 @@ export default function Stage2({ data, setMany }) {
         if (val <= 0) return null;
         if (data.insuranceInSuper === "yes") {
           return (
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#FBF8F2", border: "1px solid #E4D8BC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#6B5830", lineHeight: 1.5 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#FBF8F2", border: "1px solid #E4D8BC", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#6B5830", lineHeight: 1.5 }}>
               <span style={{ flexShrink: 0, marginTop: 1 }}>⚠</span>
               <span>
                 This premium is currently set to <strong>inside super</strong> in Super &amp; Goals (Stage 5). It won't appear as a cashflow expense here. Editing the amount above will switch it to outside super.
@@ -969,7 +969,7 @@ export default function Stage2({ data, setMany }) {
           );
         }
         return (
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#2E4A3D", lineHeight: 1.5 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#2E4A3D", lineHeight: 1.5 }}>
             <span style={{ flexShrink: 0, marginTop: 1 }}>↗</span>
             <span>
               Synced to <strong>Super &amp; Goals (Stage 5)</strong>. The same amount appears there as an outside-super premium. Update it in either place.
@@ -993,7 +993,7 @@ export default function Stage2({ data, setMany }) {
             if (val <= 0) return null;
             if (data.partnerInsuranceInSuper === "yes") {
               return (
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#FBF8F2", border: "1px solid #E4D8BC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#6B5830", lineHeight: 1.5 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#FBF8F2", border: "1px solid #E4D8BC", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#6B5830", lineHeight: 1.5 }}>
                   <span style={{ flexShrink: 0, marginTop: 1 }}>⚠</span>
                   <span>
                     {data.partnerName || "Partner"}'s premium is set to <strong>inside super</strong> in Stage 5. Editing it above will switch it to outside super.
@@ -1002,7 +1002,7 @@ export default function Stage2({ data, setMany }) {
               );
             }
             return (
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#2E4A3D", lineHeight: 1.5 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#2E4A3D", lineHeight: 1.5 }}>
                 <span style={{ flexShrink: 0, marginTop: 1 }}>↗</span>
                 <span>
                   Synced to <strong>Super &amp; Goals (Stage 5)</strong>. Update it in either place.

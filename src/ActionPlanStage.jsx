@@ -22,11 +22,11 @@ function PlanItem({ item }) {
     <div style={{ borderLeft: `3px solid ${s.border}`, background: s.bg, borderRadius: "0 8px 8px 0", padding: "12px 14px", marginBottom: 8 }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 4 }}>
         <div style={{ width: 8, height: 8, borderRadius: "50%", background: s.dot, flexShrink: 0, marginTop: 5 }} />
-        <div style={{ fontSize: 13, fontWeight: 600, color: "#21241E", lineHeight: 1.4 }}>{item.title}</div>
+        <div style={{ fontSize: 15, fontWeight: 600, color: "#21241E", lineHeight: 1.4 }}>{item.title}</div>
       </div>
-      <div style={{ fontSize: 13, color: "#3D3D35", lineHeight: 1.6, marginLeft: 16 }}>{item.body}</div>
+      <div style={{ fontSize: 15, color: "#3D3D35", lineHeight: 1.6, marginLeft: 16 }}>{item.body}</div>
       {item.footnote && (
-        <div style={{ fontSize: 11, color: "#8A8270", lineHeight: 1.5, marginTop: 6, marginLeft: 16, fontStyle: "italic" }}>{item.footnote}</div>
+        <div style={{ fontSize: 12, color: "#8A8270", lineHeight: 1.5, marginTop: 6, marginLeft: 16, fontStyle: "italic" }}>{item.footnote}</div>
       )}
     </div>
   );
@@ -66,14 +66,14 @@ function ActionPlanScreen({ data }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 10, marginBottom: 24 }}>
           {summaryCards.map((c, i) => (
             <div key={i} style={{ background: "white", border: "1px solid #ECE7DB", borderRadius: 10, padding: "12px 14px" }}>
-              <div style={{ fontSize: 11, color: "#8A8270", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>{c.label}</div>
+              <div style={{ fontSize: 12, color: "#8A8270", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 3 }}>{c.label}</div>
               <div style={{ fontFamily: "Spectral, serif", fontSize: 18, color: "#2E4A3D", fontWeight: 500 }}>{c.value}</div>
             </div>
           ))}
         </div>
       )}
 
-      <div style={{ fontSize: 12, color: "#8A8270", lineHeight: 1.6, background: "#F5F2EB", borderRadius: 8, padding: "10px 14px", marginBottom: 20 }}>
+      <div style={{ fontSize: 13, color: "#8A8270", lineHeight: 1.6, background: "#F5F2EB", borderRadius: 8, padding: "10px 14px", marginBottom: 20 }}>
         The observations below are derived from your inputs and the modelling engine. They present calculations and factual notes, not personal financial advice. For decisions affecting your financial position, consult a licensed Australian financial adviser (AFSL holder).
       </div>
 
@@ -94,7 +94,7 @@ function ActionPlanScreen({ data }) {
       })}
 
       <div style={{ marginTop: 8, background: "#F5F2EB", border: "1px solid #ECE7DB", borderRadius: 10, padding: "16px 18px" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6B6655", marginBottom: 10 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#6B6655", marginBottom: 10 }}>
           Topics to explore with a financial adviser
         </div>
         {[
@@ -107,10 +107,10 @@ function ActionPlanScreen({ data }) {
         ].map((pt, i) => (
           <div key={i} style={{ display: "flex", gap: 10, marginBottom: 8 }}>
             <div style={{ color: "#9DB0A1", fontWeight: 700, fontSize: 13, flexShrink: 0, marginTop: 1 }}>→</div>
-            <div style={{ fontSize: 13, color: "#6B6655", lineHeight: 1.5 }}>{pt}</div>
+            <div style={{ fontSize: 15, color: "#6B6655", lineHeight: 1.5 }}>{pt}</div>
           </div>
         ))}
-        <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid #D8D2C4", fontSize: 11, color: "#8A8270", lineHeight: 1.5 }}>
+        <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid #D8D2C4", fontSize: 12, color: "#8A8270", lineHeight: 1.5 }}>
           These are general topics for educational purposes only. Nothing in this summary constitutes personal financial advice. For tailored advice, engage a licensed Australian financial adviser (AFSL holder).
         </div>
       </div>
@@ -124,7 +124,7 @@ function ActionPlanScreen({ data }) {
         </PremiumGate>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 11, color: "#8A8270" }}>Financial year</span>
+            <span style={{ fontSize: 12, color: "#8A8270" }}>Financial year</span>
             {can(FEATURES.BUDGET_CUSTOM_FY) ? (
               <select
                 value={startMonth}

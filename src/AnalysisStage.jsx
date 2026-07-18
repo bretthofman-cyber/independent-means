@@ -48,10 +48,10 @@ function AssumptionRow({ fieldKey, value, defaultValue, onChange, isCustom }) {
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-        <div style={{ fontSize: 13, fontWeight: 500, color: "#21241E" }}>{meta.label}</div>
+        <div style={{ fontSize: 15, fontWeight: 500, color: "#21241E" }}>{meta.label}</div>
         <button
           onClick={() => setShowSource(s => !s)}
-          style={{ fontSize: 11, color: "#2E4A3D", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}
+          style={{ fontSize: 12, color: "#2E4A3D", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}
         >
           {showSource ? "Hide source" : "Why this number?"}
         </button>
@@ -59,7 +59,7 @@ function AssumptionRow({ fieldKey, value, defaultValue, onChange, isCustom }) {
       {showSource && (
         <div style={{
           background: "#EAF0EC", border: "1px solid #D8D2C4", borderRadius: 8,
-          padding: "10px 12px", fontSize: 12, color: "#3C5247", lineHeight: 1.6, marginBottom: 8,
+          padding: "10px 12px", fontSize: 13, color: "#3C5247", lineHeight: 1.6, marginBottom: 8,
         }}>
           {meta.source}
         </div>
@@ -79,11 +79,11 @@ function AssumptionRow({ fieldKey, value, defaultValue, onChange, isCustom }) {
             outline: "none", fontFamily: "inherit",
           }}
         />
-        <span style={{ fontSize: 13, color: "#6B6655", width: 20 }}>%</span>
+        <span style={{ fontSize: 15, color: "#6B6655", width: 20 }}>%</span>
         {isCustom && value !== defaultValue && (
           <button
             onClick={() => onChange(defaultValue)}
-            style={{ fontSize: 11, color: "#9a3922", background: "none", border: "1px solid #f0d0c4", borderRadius: 6, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
+            style={{ fontSize: 12, color: "#9a3922", background: "none", border: "1px solid #f0d0c4", borderRadius: 6, padding: "4px 8px", cursor: "pointer", whiteSpace: "nowrap" }}
           >
             Reset
           </button>
@@ -217,14 +217,14 @@ function WarningsPanel({ data, engine }) {
                 <span style={{ fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", padding: "2px 8px", borderRadius: 10, background: c.badge, color: c.badgeFg, flexShrink: 0 }}>
                   {w.severity}
                 </span>
-                <span style={{ fontSize: 13, fontWeight: 500, color: c.text, flex: 1 }}>{w.title}</span>
-                <span style={{ fontSize: 11, color: c.text, opacity: 0.6 }}>{isOpen ? "▲" : "▼"}</span>
+                <span style={{ fontSize: 15, fontWeight: 500, color: c.text, flex: 1 }}>{w.title}</span>
+                <span style={{ fontSize: 12, color: c.text, opacity: 0.6 }}>{isOpen ? "▲" : "▼"}</span>
               </button>
               {isOpen && (
                 <div style={{ padding: "0 14px 14px", borderTop: `1px solid ${c.border}` }}>
-                  <p style={{ fontSize: 13, color: c.text, lineHeight: 1.6, margin: "10px 0 0" }}>{w.message}</p>
+                  <p style={{ fontSize: 15, color: c.text, lineHeight: 1.6, margin: "10px 0 0" }}>{w.message}</p>
                   {w.hint && (
-                    <div style={{ marginTop: 8, padding: "8px 12px", background: "rgba(255,255,255,0.6)", borderRadius: 8, fontSize: 12, color: c.text, lineHeight: 1.5, opacity: 0.85 }}>
+                    <div style={{ marginTop: 8, padding: "8px 12px", background: "rgba(255,255,255,0.6)", borderRadius: 8, fontSize: 13, color: c.text, lineHeight: 1.5, opacity: 0.85 }}>
                       {w.hint}
                     </div>
                   )}
@@ -530,7 +530,7 @@ function MonteCarloCard({ data, engine }) {
 
   if (!hasTarget) return (
     <div style={{ background: "#F5F2EB", border: "1px solid #ECE7DB", borderRadius: 12, padding: "14px 18px", marginBottom: 20 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8270", marginBottom: 6 }}>Retirement Probability</div>
+      <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8270", marginBottom: 6 }}>Retirement Probability</div>
       <div style={{ fontSize: 13, color: "#8A8270" }}>Enter a target retirement spending in Stage 5 to see Monte Carlo simulation</div>
     </div>
   );
@@ -552,28 +552,28 @@ function MonteCarloCard({ data, engine }) {
 
   return (
     <div style={{ background: bg, border: `1.5px solid ${bdr}`, borderRadius: 12, padding: "16px 18px", marginBottom: 20 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8270", marginBottom: 10 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A8270", marginBottom: 10 }}>
         Retirement Probability
       </div>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 16, marginBottom: 14 }}>
         <RetirementGauge successRate={successRate} color={color} />
         <div style={{ paddingTop: 6, flex: 1 }}>
-          <span style={{ fontSize: 12, fontWeight: 600, color, background: `${color}20`, padding: "3px 10px", borderRadius: 20, display: "inline-block", marginBottom: 8 }}>{label}</span>
-          <div style={{ fontSize: 12, color: "#6B6655", lineHeight: 1.5 }}>{desc}</div>
+          <span style={{ fontSize: 13, fontWeight: 600, color, background: `${color}20`, padding: "3px 10px", borderRadius: 20, display: "inline-block", marginBottom: 8 }}>{label}</span>
+          <div style={{ fontSize: 13, color: "#6B6655", lineHeight: 1.5 }}>{desc}</div>
         </div>
       </div>
 
       <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
         <div>
           <div style={{ fontSize: 10, color: "#8A8270", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>Super at retirement: range</div>
-          <div style={{ fontSize: 13, fontWeight: 500, color: "#21241E" }}>
+          <div style={{ fontSize: 15, fontWeight: 500, color: "#21241E" }}>
             {currency(retirementBalance.p10)} to {currency(retirementBalance.p90)}
           </div>
           <div style={{ fontSize: 10, color: "#9DB0A1" }}>10th to 90th percentile</div>
         </div>
         <div>
           <div style={{ fontSize: 10, color: "#8A8270", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 2 }}>Median outcome</div>
-          <div style={{ fontSize: 13, fontWeight: 500, color: "#21241E" }}>{currency(retirementBalance.p50)}</div>
+          <div style={{ fontSize: 15, fontWeight: 500, color: "#21241E" }}>{currency(retirementBalance.p50)}</div>
         </div>
         <div style={{ marginLeft: "auto", textAlign: "right" }}>
           <div style={{ fontSize: 10, color: "#9DB0A1" }}>{iterations.toLocaleString()} simulations</div>
@@ -876,7 +876,7 @@ function NetWorthChart({ engine, data }) {
         )}
       </div>
 
-      <div style={{ display: "flex", gap: 20, fontSize: 11, color: "#8A8270", flexWrap: "wrap", borderTop: "1px solid #ECE7DB", paddingTop: 8 }}>
+      <div style={{ display: "flex", gap: 20, fontSize: 12, color: "#8A8270", flexWrap: "wrap", borderTop: "1px solid #ECE7DB", paddingTop: 8 }}>
         <span>Today: <strong style={{ color: "#21241E", fontFamily: "Spectral, serif", fontSize: 13 }}>{currency(startPoint.netWorth)}</strong></span>
         {retPoint && (
           <span>At retirement: <strong style={{ color: "#21241E", fontFamily: "Spectral, serif", fontSize: 13 }}>{currency(retPoint.netWorth)}</strong></span>

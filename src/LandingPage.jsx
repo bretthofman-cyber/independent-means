@@ -48,7 +48,7 @@ function LoginScreen() {
             Independent<span style={{ color: "#2E4A3D" }}> Means</span>
           </div>
           <button onClick={signInWithGoogle} disabled={loading} style={{
-            fontSize: 13, fontWeight: 500, color: "#2E4A3D", background: "none",
+            fontSize: 15, fontWeight: 500, color: "#2E4A3D", background: "none",
             border: "1.5px solid #2E4A3D", borderRadius: 8, padding: "7px 16px",
             cursor: "pointer", fontFamily: "inherit",
           }}>
@@ -71,7 +71,7 @@ function LoginScreen() {
           </p>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <GoogleButton onClick={signInWithGoogle} loading={loading} />
-            <div style={{ fontSize: 12, color: "#9DB0A1" }}>Free to use · No credit card required</div>
+            <div style={{ fontSize: 13, color: "#9DB0A1" }}>Free to use · No credit card required</div>
           </div>
         </div>
       </section>
@@ -90,7 +90,7 @@ function LoginScreen() {
             <div key={f.title} style={{ background: "#FBFAF6", border: "1px solid #E8E3D9", borderRadius: 14, padding: "28px 24px" }}>
               <div style={{ marginBottom: 16 }}>{f.icon}</div>
               <div style={{ fontSize: 15, fontWeight: 600, color: "#21241E", marginBottom: 8 }}>{f.title}</div>
-              <div style={{ fontSize: 13, color: "#6B6655", lineHeight: 1.65 }}>{f.body}</div>
+              <div style={{ fontSize: 15, color: "#6B6655", lineHeight: 1.65 }}>{f.body}</div>
             </div>
           ))}
         </div>
@@ -119,7 +119,7 @@ function LoginScreen() {
                 </div>
                 <div style={{ paddingTop: 6, paddingBottom: i < arr.length - 1 ? 16 : 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: "#21241E", marginBottom: 4 }}>{s.title}</div>
-                  <div style={{ fontSize: 13, color: "#6B6655", lineHeight: 1.6 }}>{s.body}</div>
+                  <div style={{ fontSize: 15, color: "#6B6655", lineHeight: 1.6 }}>{s.body}</div>
                 </div>
               </div>
             ))}
@@ -137,8 +137,8 @@ function LoginScreen() {
             { title: "General information only", body: "Independent Means is a modelling tool, not a licensed financial adviser. Every output is a scenario estimate, not a recommendation." },
           ].map(t => (
             <div key={t.title} style={{ borderLeft: "3px solid #2E4A3D", paddingLeft: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "#21241E", marginBottom: 6 }}>{t.title}</div>
-              <div style={{ fontSize: 13, color: "#6B6655", lineHeight: 1.65 }}>{t.body}</div>
+              <div style={{ fontSize: 15, fontWeight: 600, color: "#21241E", marginBottom: 6 }}>{t.title}</div>
+              <div style={{ fontSize: 15, color: "#6B6655", lineHeight: 1.65 }}>{t.body}</div>
             </div>
           ))}
         </div>
@@ -150,25 +150,25 @@ function LoginScreen() {
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <div style={{ fontSize: 11, letterSpacing: "0.10em", textTransform: "uppercase", color: "#C2A06B", fontWeight: 600, marginBottom: 8 }}>Pricing</div>
             <div style={{ fontFamily: "Spectral, serif", fontSize: 30, fontWeight: 400, color: "#21241E", lineHeight: 1.25, marginBottom: 12 }}>Simple, transparent pricing</div>
-            <div style={{ fontSize: 14, color: "#6B6655", lineHeight: 1.6 }}>Start free. Upgrade when you want the full picture.</div>
+            <div style={{ fontSize: 15, color: "#6B6655", lineHeight: 1.6 }}>Start free. Upgrade when you want the full picture.</div>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, maxWidth: 680, margin: "0 auto" }}>
             {/* Free */}
             <div style={{ background: "#FBFAF6", borderRadius: 20, padding: "32px 28px", border: "1px solid #E8E3D9" }}>
               <div style={{ fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase", color: "#9DB0A1", fontWeight: 600, marginBottom: 12 }}>Free</div>
               <div style={{ fontFamily: "Spectral, serif", fontSize: 34, fontWeight: 400, color: "#21241E", lineHeight: 1 }}>A$0</div>
-              <div style={{ fontSize: 12, color: "#9DB0A1", marginTop: 4, marginBottom: 24 }}>Forever free</div>
+              <div style={{ fontSize: 13, color: "#9DB0A1", marginTop: 4, marginBottom: 24 }}>Forever free</div>
               <button onClick={signInWithGoogle} disabled={loading} style={{
                 width: "100%", padding: "11px 0", background: "transparent",
-                border: "1.5px solid #D8D2C4", borderRadius: 10, fontSize: 13,
+                border: "1.5px solid #D8D2C4", borderRadius: 10, fontSize: 15,
                 fontWeight: 600, color: "#2E4A3D", cursor: "pointer", fontFamily: "inherit", marginBottom: 24,
               }}>
                 {loading ? "Redirecting…" : "Get started free"}
               </button>
               {["Full 8-stage financial model", "Base-case projections", "Net worth trajectory", "FIRE number + Coast FIRE", "Basic AU tax modelling", "1 saved model"].map(f => (
                 <div key={f} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                  <span style={{ color: "#9DB0A1", fontSize: 13 }}>✓</span>
-                  <span style={{ fontSize: 13, color: "#6B6655" }}>{f}</span>
+                  <span style={{ color: "#9DB0A1", fontSize: 15 }}>✓</span>
+                  <span style={{ fontSize: 15, color: "#6B6655" }}>{f}</span>
                 </div>
               ))}
             </div>
@@ -179,25 +179,25 @@ function LoginScreen() {
               <div style={{ fontFamily: "Spectral, serif", fontSize: 34, fontWeight: 400, color: "#F5F2EB", lineHeight: 1 }}>A$149
                 <span style={{ fontSize: 16, fontWeight: 400, color: "#9DB0A1" }}>/yr</span>
               </div>
-              <div style={{ fontSize: 12, color: "#9DB0A1", marginTop: 4, marginBottom: 24 }}>
+              <div style={{ fontSize: 13, color: "#9DB0A1", marginTop: 4, marginBottom: 24 }}>
                 A$12.42/mo · or A$15/mo monthly · <span style={{ color: "#C2A06B", fontWeight: 600 }}>Save 17%</span>
               </div>
               <button onClick={signInWithGoogle} disabled={loading} style={{
                 width: "100%", padding: "11px 0", background: "#C2A06B",
-                border: "none", borderRadius: 10, fontSize: 13,
+                border: "none", borderRadius: 10, fontSize: 15,
                 fontWeight: 600, color: "#FBFAF6", cursor: "pointer", fontFamily: "inherit", marginBottom: 24,
               }}>
                 {loading ? "Redirecting…" : "Start 14-day free trial"}
               </button>
               {["Everything in Free", "Monte Carlo probability view", "Scenario comparison", "Custom assumptions", "Division 293 modelling", "Carry-forward cap", "Franking credits", "Debt recycling", "Strategy Centre", "PDF + CSV export"].map(f => (
                 <div key={f} style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                  <span style={{ color: "#C2A06B", fontSize: 13 }}>✓</span>
-                  <span style={{ fontSize: 13, color: "#9DB0A1" }}>{f}</span>
+                  <span style={{ color: "#C2A06B", fontSize: 15 }}>✓</span>
+                  <span style={{ fontSize: 15, color: "#9DB0A1" }}>{f}</span>
                 </div>
               ))}
             </div>
           </div>
-          <div style={{ textAlign: "center", marginTop: 24, fontSize: 11, color: "#9DB0A1" }}>
+          <div style={{ textAlign: "center", marginTop: 24, fontSize: 12, color: "#9DB0A1" }}>
             14-day free trial included with Premium. No credit card required to start. Cancel any time.
           </div>
         </div>
@@ -227,7 +227,7 @@ function LoginScreen() {
               </svg>
               {loading ? "Redirecting…" : "Get started free"}
             </button>
-            <div style={{ fontSize: 12, color: "#6B8F84" }}>No credit card · Your data, your account</div>
+            <div style={{ fontSize: 13, color: "#6B8F84" }}>No credit card · Your data, your account</div>
           </div>
         </div>
       </section>
@@ -238,12 +238,12 @@ function LoginScreen() {
           <div style={{ fontFamily: "Spectral, serif", fontSize: 16, color: "#9DB0A1" }}>
             Independent<span style={{ color: "#6B8F84" }}> Means</span>
           </div>
-          <div style={{ fontSize: 11, color: "#6B6655", display: "flex", gap: 20, flexWrap: "wrap" }}>
-            <button onClick={() => setModal("terms")} onMouseEnter={() => setHoveredBtn("terms")} onMouseLeave={() => setHoveredBtn(null)} style={{ background: "none", border: "none", color: hoveredBtn === "terms" ? "#9DB0A1" : "#6B6655", cursor: "pointer", fontSize: 11, padding: 0, fontFamily: "inherit", transition: "color 0.2s" }}>Terms of Service</button>
-            <button onClick={() => setModal("privacy")} onMouseEnter={() => setHoveredBtn("privacy")} onMouseLeave={() => setHoveredBtn(null)} style={{ background: "none", border: "none", color: hoveredBtn === "privacy" ? "#9DB0A1" : "#6B6655", cursor: "pointer", fontSize: 11, padding: 0, fontFamily: "inherit", transition: "color 0.2s" }}>Privacy Policy</button>
+          <div style={{ fontSize: 12, color: "#6B6655", display: "flex", gap: 20, flexWrap: "wrap" }}>
+            <button onClick={() => setModal("terms")} onMouseEnter={() => setHoveredBtn("terms")} onMouseLeave={() => setHoveredBtn(null)} style={{ background: "none", border: "none", color: hoveredBtn === "terms" ? "#9DB0A1" : "#6B6655", cursor: "pointer", fontSize: 12, padding: 0, fontFamily: "inherit", transition: "color 0.2s" }}>Terms of Service</button>
+            <button onClick={() => setModal("privacy")} onMouseEnter={() => setHoveredBtn("privacy")} onMouseLeave={() => setHoveredBtn(null)} style={{ background: "none", border: "none", color: hoveredBtn === "privacy" ? "#9DB0A1" : "#6B6655", cursor: "pointer", fontSize: 12, padding: 0, fontFamily: "inherit", transition: "color 0.2s" }}>Privacy Policy</button>
             <span>hello@independentmeans.com.au</span>
           </div>
-          <div style={{ fontSize: 11, color: "#4A4A42" }}>© {new Date().getFullYear()} Independent Means. General information only.</div>
+          <div style={{ fontSize: 12, color: "#4A4A42" }}>© {new Date().getFullYear()} Independent Means. General information only.</div>
         </div>
       </footer>
     </div>

@@ -190,10 +190,10 @@ function Stage1({ data, set }) {
         }}>
           <div style={{ fontSize: 22, flexShrink: 0, marginTop: 1 }}>✦</div>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "#21241E", marginBottom: 4 }}>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "#21241E", marginBottom: 4 }}>
               Welcome to Independent Means
             </div>
-            <div style={{ fontSize: 12, color: "#6B6655", lineHeight: 1.6 }}>
+            <div style={{ fontSize: 13, color: "#6B6655", lineHeight: 1.6 }}>
               A 7-step modelling tool for Australian households. Enter your details to project super, net worth, retirement funding probability, and cashflow, all calculated locally, never sent anywhere.
             </div>
           </div>
@@ -280,10 +280,10 @@ function PropertyCard({ ip, onChange, onClone, onRemove, isCouple }) {
             }}>
               {ip.status === "existing" ? "Existing" : `Planned ${ip.purchaseYear}`}
             </span>
-            <span style={{ fontSize: 14, fontWeight: 500, color: "#21241E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ip.label}</span>
+            <span style={{ fontSize: 15, fontWeight: 500, color: "#21241E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ip.label}</span>
           </div>
           {(ip.value || ip.weeklyRent) && (
-            <div style={{ fontSize: 12, color: "#8A8270", display: "flex", gap: 16, flexWrap: "wrap" }}>
+            <div style={{ fontSize: 13, color: "#8A8270", display: "flex", gap: 16, flexWrap: "wrap" }}>
               {ip.value      && <span>Value {currency(ip.value)}</span>}
               {ipMort > 0    && <span>Equity {currency(equity)}</span>}
               {ip.weeklyRent && <span>${ip.weeklyRent}/wk</span>}
@@ -291,9 +291,9 @@ function PropertyCard({ ip, onChange, onClone, onRemove, isCouple }) {
           )}
         </div>
         <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-          <button onClick={onClone} style={{ fontSize: 11, color: "#6B6655", background: "none", border: "1px solid #D8D2C4", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>Clone</button>
-          <button onClick={onRemove} style={{ fontSize: 11, color: "#9a3922", background: "none", border: "1px solid #f0d0c4", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>Remove</button>
-          <button onClick={() => setExpanded(e => !e)} style={{ fontSize: 11, color: "#2E4A3D", background: "#EAF0EC", border: "1px solid #D8D2C4", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>
+          <button onClick={onClone} style={{ fontSize: 12, color: "#6B6655", background: "none", border: "1px solid #D8D2C4", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>Clone</button>
+          <button onClick={onRemove} style={{ fontSize: 12, color: "#9a3922", background: "none", border: "1px solid #f0d0c4", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>Remove</button>
+          <button onClick={() => setExpanded(e => !e)} style={{ fontSize: 12, color: "#2E4A3D", background: "#EAF0EC", border: "1px solid #D8D2C4", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}>
             {expanded ? "Collapse ▲" : "Edit ▼"}
           </button>
         </div>
@@ -346,7 +346,7 @@ function PropertyCard({ ip, onChange, onClone, onRemove, isCouple }) {
                   <Input value={ip.ioExpiryYear} onChange={v => upd("ioExpiryYear", v)} placeholder={String(new Date().getFullYear() + 3)} type="number" />
                 </Field>
                 {showInfo && (
-                  <div style={{ fontSize: 12, color: "#5a6e5e", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, padding: "8px 12px", marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, color: "#5a6e5e", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, padding: "8px 12px", marginBottom: 16 }}>
                     Interest only until <strong>{expiryYear}</strong>. Reverts to P&amp;I repayments from {expiryYear} until loan end in <strong>{endYear}</strong>.
                   </div>
                 )}
@@ -402,8 +402,8 @@ function PropertyPortfolio({ ips, onChange, isCouple }) {
     <div>
       {ips.length === 0 ? (
         <div style={{ textAlign: "center", padding: "24px", background: "#FBFAF6", border: "1.5px dashed #D8D2C4", borderRadius: 12, marginBottom: 12 }}>
-          <div style={{ fontSize: 13, color: "#8A8270", marginBottom: 12 }}>No investment properties added yet</div>
-          <button onClick={addProperty} style={{ padding: "10px 20px", border: "none", borderRadius: 10, background: "#2E4A3D", color: "white", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+          <div style={{ fontSize: 15, color: "#8A8270", marginBottom: 12 }}>No investment properties added yet</div>
+          <button onClick={addProperty} style={{ padding: "10px 20px", border: "none", borderRadius: 10, background: "#2E4A3D", color: "white", fontSize: 15, cursor: "pointer", fontFamily: "inherit" }}>
             + Add Investment Property
           </button>
         </div>
@@ -417,7 +417,7 @@ function PropertyPortfolio({ ips, onChange, isCouple }) {
               isCouple={isCouple}
             />
           ))}
-          <button onClick={addProperty} style={{ width: "100%", padding: "10px", border: "1.5px dashed #D8D2C4", borderRadius: 10, background: "#FBFAF6", fontSize: 13, color: "#2E4A3D", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+          <button onClick={addProperty} style={{ width: "100%", padding: "10px", border: "1.5px dashed #D8D2C4", borderRadius: 10, background: "#FBFAF6", fontSize: 15, color: "#2E4A3D", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
             + Add another property
           </button>
         </>
@@ -470,7 +470,7 @@ function Stage4({ data, set }) {
                   <Input value={data.mortgageIoExpiryYear} onChange={v => set("mortgageIoExpiryYear", v)} placeholder={String(new Date().getFullYear() + 3)} type="number" />
                 </Field>
                 {showInfo && (
-                  <div style={{ fontSize: 12, color: "#5a6e5e", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, padding: "8px 12px", marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, color: "#5a6e5e", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, padding: "8px 12px", marginBottom: 16 }}>
                     Interest only until <strong>{expiryYear}</strong>. Reverts to P&amp;I repayments from {expiryYear} until loan end in <strong>{endYear}</strong>.
                   </div>
                 )}
@@ -485,8 +485,8 @@ function Stage4({ data, set }) {
           <PremiumGate featureId="debt_recycling" label="Debt recycling">
             <div style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "12px 14px", border: "1.5px solid #D8D2C4", borderRadius: 10, background: "#FBFAF6", marginBottom: 16 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: "#21241E", marginBottom: 2 }}>Enable debt recycling</div>
-                <div style={{ fontSize: 11, color: "#8A8270", lineHeight: 1.5 }}>
+                <div style={{ fontSize: 15, fontWeight: 500, color: "#21241E", marginBottom: 2 }}>Enable debt recycling</div>
+                <div style={{ fontSize: 12, color: "#8A8270", lineHeight: 1.5 }}>
                   Converts non-deductible mortgage interest to deductible investment debt as you repay and redraw. Modelled as an annual tax saving added to liquid savings. General information only. Consult a tax adviser before implementing.
                 </div>
               </div>
@@ -561,8 +561,8 @@ function SalarySacrificeRow({ label, grossIncome, sgRate, ssValue, ssMaxed, onSs
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 500, color: "#21241E" }}>{label}</div>
-          {hint && <div style={{ fontSize: 11, color: "#8A8270", marginTop: 1 }}>{hint}</div>}
+          <div style={{ fontSize: 15, fontWeight: 500, color: "#21241E" }}>{label}</div>
+          {hint && <div style={{ fontSize: 12, color: "#8A8270", marginTop: 1 }}>{hint}</div>}
         </div>
         {gross > 0 && (
           <button
@@ -598,7 +598,7 @@ function SalarySacrificeRow({ label, grossIncome, sgRate, ssValue, ssMaxed, onSs
         disabled={ssMaxed}
       />
       {gross > 0 && (
-        <div style={{ fontSize: 11, color: isOverCap ? "#9a3922" : "#8A8270", marginTop: 5, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 12, color: isOverCap ? "#9a3922" : "#8A8270", marginTop: 5, lineHeight: 1.5 }}>
           {isOverCap
             ? `Warning: ${currency(currentSS)}/yr exceeds the ${currency(capRoom)}/yr cap room. Excess concessional contributions are taxed at your marginal rate (less a 15% offset).`
             : `SG ${currency(Math.round(sg))}/yr · cap room ${currency(Math.round(capRoom))}/yr · cap $30,000/yr`}
@@ -655,7 +655,7 @@ function Stage5({ data, set }) {
       )}
 
       <SectionDivider label="Carry-forward contributions" />
-      <div style={{ fontSize: 12, color: "#8A8270", marginBottom: 12, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 13, color: "#8A8270", marginBottom: 12, lineHeight: 1.5 }}>
         If your prior-year super balance was under $500,000 and you have unused concessional cap from previous years, you may be able to contribute more than the $30,000 annual cap. Check your available amount via ATO online services.
       </div>
       <PremiumGate featureId="carry_forward_cap" label="Carry-forward contributions">
@@ -672,7 +672,7 @@ function Stage5({ data, set }) {
       </PremiumGate>
 
       <SectionDivider label="Franking credits" />
-      <div style={{ fontSize: 12, color: "#8A8270", marginBottom: 12, lineHeight: 1.5 }}>
+      <div style={{ fontSize: 13, color: "#8A8270", marginBottom: 12, lineHeight: 1.5 }}>
         Annual franking credits from Australian shares or managed funds. These offset your income tax; any excess is refunded by the ATO. Check your dividend statements or last year's tax return.
       </div>
       <PremiumGate featureId="franking_credits" label="Franking credits">
@@ -689,7 +689,7 @@ function Stage5({ data, set }) {
       </PremiumGate>
 
       <SectionDivider label="Life & disability insurance" />
-      <div style={{ fontSize: 12, color: "#8A8270", marginBottom: 14, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 13, color: "#8A8270", marginBottom: 14, lineHeight: 1.6 }}>
         Insurance held inside super is paid from your fund balance. It reduces super accumulation but doesn't affect take-home pay. Insurance outside super is a direct cashflow cost and also appears in Stage 2, Income &amp; Cashflow.
       </div>
       <Field label="Your annual insurance premium" hint="Total for life/death + TPD covers; check your super fund statement or policy schedule">
@@ -702,7 +702,7 @@ function Stage5({ data, set }) {
         </Field>
       )}
       {parseFloat(String(data.insurancePremium || "").replace(/,/g, "")) > 0 && data.insuranceInSuper !== "yes" && (
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#2E4A3D", lineHeight: 1.5 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#2E4A3D", lineHeight: 1.5 }}>
           <span style={{ flexShrink: 0, marginTop: 1 }}>↗</span>
           <span>
             This outside-super premium is synced to <strong>Income &amp; Cashflow (Stage 2)</strong>. It appears there as a cashflow expense. Update it in either place.
@@ -721,7 +721,7 @@ function Stage5({ data, set }) {
             </Field>
           )}
           {parseFloat(String(data.partnerInsurancePremium || "").replace(/,/g, "")) > 0 && data.partnerInsuranceInSuper !== "yes" && (
-            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, marginBottom: 16, fontSize: 12, color: "#2E4A3D", lineHeight: 1.5 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "8px 12px", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#2E4A3D", lineHeight: 1.5 }}>
               <span style={{ flexShrink: 0, marginTop: 1 }}>↗</span>
               <span>
                 {data.partnerName || "Partner"}'s outside-super premium is synced to <strong>Income &amp; Cashflow (Stage 2)</strong>. Update it in either place.
@@ -771,7 +771,7 @@ function LifeEventsPanel({ data, set }) {
   return (
     <div style={{ marginBottom: 28 }}>
       <SectionDivider label="Life events & milestones" />
-      <div style={{ fontSize: 12, color: "#8A8270", marginBottom: 14 }}>
+      <div style={{ fontSize: 13, color: "#8A8270", marginBottom: 14 }}>
         Add events that will affect your cashflow, income, or assets at a specific point in time. They are layered on top of your base scenario.
       </div>
 
@@ -793,10 +793,10 @@ function LifeEventsPanel({ data, set }) {
                 <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
                   <span style={{ fontSize: 16, flexShrink: 0 }}>{meta.icon || "📅"}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: "#21241E" }}>{meta.label || evt.type}</div>
-                    {evt.customLabel && <div style={{ fontSize: 11, color: "#8A8270" }}>{evt.customLabel}</div>}
+                    <div style={{ fontSize: 15, fontWeight: 500, color: "#21241E" }}>{meta.label || evt.type}</div>
+                    {evt.customLabel && <div style={{ fontSize: 12, color: "#8A8270" }}>{evt.customLabel}</div>}
                   </div>
-                  <button onClick={() => removeEvent(evt.id)} style={{ fontSize: 11, color: "#9a3922", background: "none", border: "1px solid #f0d0c4", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>Remove</button>
+                  <button onClick={() => removeEvent(evt.id)} style={{ fontSize: 12, color: "#9a3922", background: "none", border: "1px solid #f0d0c4", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>Remove</button>
                 </div>
 
                 <div style={{ padding: "0 14px 14px", borderTop: "1px solid #ECE7DB", display: "flex", flexWrap: "wrap", gap: 10, marginTop: 0 }}>
@@ -862,8 +862,8 @@ function LifeEventsPanel({ data, set }) {
       {showPicker ? (
         <div style={{ border: "1.5px solid #D8D2C4", borderRadius: 10, overflow: "hidden", background: "white" }}>
           <div style={{ padding: "10px 14px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid #ECE7DB" }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#21241E" }}>Choose event type</div>
-            <button onClick={() => setShowPicker(false)} style={{ fontSize: 12, color: "#8A8270", background: "none", border: "none", cursor: "pointer" }}>✕</button>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#21241E" }}>Choose event type</div>
+            <button onClick={() => setShowPicker(false)} style={{ fontSize: 13, color: "#8A8270", background: "none", border: "none", cursor: "pointer" }}>✕</button>
           </div>
           <div style={{ padding: "8px" }}>
             {Object.entries(LIFE_EVENT_TYPES).map(([key, meta]) => (
@@ -876,8 +876,8 @@ function LifeEventsPanel({ data, set }) {
               >
                 <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{meta.icon}</span>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: "#21241E" }}>{meta.label}</div>
-                  <div style={{ fontSize: 11, color: "#8A8270" }}>{meta.description}</div>
+                  <div style={{ fontSize: 15, fontWeight: 500, color: "#21241E" }}>{meta.label}</div>
+                  <div style={{ fontSize: 12, color: "#8A8270" }}>{meta.description}</div>
                 </div>
               </button>
             ))}
@@ -886,7 +886,7 @@ function LifeEventsPanel({ data, set }) {
       ) : (
         <button
           onClick={() => setShowPicker(true)}
-          style={{ width: "100%", padding: "10px", border: "1.5px dashed #D8D2C4", borderRadius: 10, background: "#FBFAF6", fontSize: 13, color: "#2E4A3D", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+          style={{ width: "100%", padding: "10px", border: "1.5px dashed #D8D2C4", borderRadius: 10, background: "#FBFAF6", fontSize: 15, color: "#2E4A3D", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
         >
           + Add life event
         </button>
@@ -1095,45 +1095,45 @@ export default function IndependentMeans() {
           <div className="app-subtitle" style={{ fontSize: 10, color: "#8A8270", letterSpacing: "0.08em", textTransform: "uppercase" }}>Personal Financial Modelling & Scenario Planning</div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {data.firstName && <div style={{ fontSize: 12, color: "#6B6655" }}>Hi, {data.firstName} 👋</div>}
+          {data.firstName && <div style={{ fontSize: 13, color: "#6B6655" }}>Hi, {data.firstName} 👋</div>}
           {isAdmin && (
             <button
               onClick={() => setShowAdmin(true)}
-              style={{ fontSize: 11, color: "#8A8270", background: "none", border: "1px solid #ECE7DB", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}
+              style={{ fontSize: 12, color: "#8A8270", background: "none", border: "1px solid #ECE7DB", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}
             >Analytics</button>
           )}
           <PremiumGate featureId={FEATURES.MULTI_PLAN} label="Multiple plans" onOpenPricing={() => setShowPricing(true)}>
             <button
-              style={{ fontSize: 11, color: "#2E4A3D", background: "none", border: "1px solid #9DB0A1", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}
+              style={{ fontSize: 12, color: "#2E4A3D", background: "none", border: "1px solid #9DB0A1", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}
             >+ New plan</button>
           </PremiumGate>
           {entitlement.status === "active" && (
             <button
               onClick={() => entitlement.openPortal()}
-              style={{ fontSize: 11, color: "#2E4A3D", background: "none", border: "1px solid #9DB0A1", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}
+              style={{ fontSize: 12, color: "#2E4A3D", background: "none", border: "1px solid #9DB0A1", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}
             >Billing</button>
           )}
           {(stage === 6 || stage === 7) && (
             <PremiumGate featureId={FEATURES.PDF_EXPORT} label="Download PDF report" onOpenPricing={() => setShowPricing(true)}>
               <button
                 onClick={() => window.print()}
-                style={{ fontSize: 11, color: "#2E4A3D", background: "none", border: "1px solid #9DB0A1", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}
+                style={{ fontSize: 12, color: "#2E4A3D", background: "none", border: "1px solid #9DB0A1", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}
               >Download Report</button>
             </PremiumGate>
           )}
           {entitlement.status === "free" && (
             <button
               onClick={() => setShowPricing(true)}
-              style={{ fontSize: 11, color: "#F5F2EB", background: "#2E4A3D", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}
+              style={{ fontSize: 12, color: "#F5F2EB", background: "#2E4A3D", border: "none", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit", fontWeight: 600 }}
             >Upgrade</button>
           )}
           <button
             onClick={async () => { if (window.confirm("Clear all saved data? This cannot be undone.")) { await supabase.from("plans").delete().eq("user_id", user.id); setData({ ...EMPTY_DATA }); setStage(1); } }}
-            style={{ fontSize: 11, color: "#8A8270", background: "none", border: "1px solid #ECE7DB", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}
+            style={{ fontSize: 12, color: "#8A8270", background: "none", border: "1px solid #ECE7DB", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}
           >Clear data</button>
           <button
             onClick={() => supabase.auth.signOut()}
-            style={{ fontSize: 11, color: "#8A8270", background: "none", border: "1px solid #ECE7DB", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}
+            style={{ fontSize: 12, color: "#8A8270", background: "none", border: "1px solid #ECE7DB", borderRadius: 6, padding: "4px 10px", cursor: "pointer", fontFamily: "inherit" }}
           >Sign out</button>
         </div>
       </header>
@@ -1154,7 +1154,7 @@ export default function IndependentMeans() {
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 2, transition: "all 0.2s",
                 }}>
                 <div style={{ lineHeight: 0 }}>{s.icon(isActive)}</div>
-                <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.04em", color: isActive ? "#EDE7D7" : s.id < stage ? "#2E4A3D" : "#9DB0A1", textTransform: "uppercase" }}>{s.label}</div>
+                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: "0.04em", color: isActive ? "#EDE7D7" : s.id < stage ? "#2E4A3D" : "#9DB0A1", textTransform: "uppercase" }}>{s.label}</div>
                 {hasData && !isActive && (
                   <div style={{ position: "absolute", top: 4, right: 4, width: 5, height: 5, borderRadius: "50%", background: "#2E4A3D" }} />
                 )}
@@ -1187,9 +1187,9 @@ export default function IndependentMeans() {
       <div className="app-stage-content" style={{ flex: 1, display: "flex", justifyContent: "center", padding: "32px 20px 100px" }}>
         <div style={{ width: "100%", maxWidth: 620 }}>
           <div className="no-print" style={{ marginBottom: 28, animation: "fadeIn 0.3s ease" }}>
-            <div style={{ fontSize: 11, color: "#8A8270", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Step {stage} of 7</div>
+            <div style={{ fontSize: 12, color: "#8A8270", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6 }}>Step {stage} of 7</div>
             <div style={{ fontFamily: "Spectral, serif", fontSize: 28, color: "#21241E", marginBottom: 4 }}>{currentStage.title}</div>
-            <div style={{ fontSize: 14, color: "#6B6655" }}>{currentStage.subtitle}</div>
+            <div style={{ fontSize: 15, color: "#6B6655" }}>{currentStage.subtitle}</div>
           </div>
 
           <div ref={scrollRef} style={{ background: "#FBFAF6", borderRadius: 18, border: "1px solid #ECE7DB", padding: "28px", animation: "fadeIn 0.25s ease", boxShadow: "0 2px 16px rgba(0,0,0,0.04)" }}>
@@ -1205,9 +1205,9 @@ export default function IndependentMeans() {
           {stage < 6 && (
             <div className="no-print" style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
               {stage > 1 ? (
-                <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #D8D2C4", borderRadius: 12, background: "#FBFAF6", fontSize: 14, color: "#6B6655", cursor: "pointer", fontFamily: "inherit" }}>← Back</button>
+                <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #D8D2C4", borderRadius: 12, background: "#FBFAF6", fontSize: 15, color: "#6B6655", cursor: "pointer", fontFamily: "inherit" }}>← Back</button>
               ) : <div />}
-              <button onClick={next} style={{ padding: "12px 28px", border: "none", borderRadius: 12, background: "#C2A06B", color: "#2A2113", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 12px rgba(194,160,107,0.3)" }}>
+              <button onClick={next} style={{ padding: "12px 28px", border: "none", borderRadius: 12, background: "#C2A06B", color: "#2A2113", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 12px rgba(194,160,107,0.3)" }}>
                 {stage === 5 ? "View My Analysis →" : "Continue →"}
               </button>
             </div>
@@ -1215,14 +1215,14 @@ export default function IndependentMeans() {
 
           {stage === 6 && (
             <div className="no-print" style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
-              <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #D8D2C4", borderRadius: 12, background: "#FBFAF6", fontSize: 14, color: "#6B6655", cursor: "pointer", fontFamily: "inherit" }}>← Edit my details</button>
-              <button onClick={next} style={{ padding: "12px 28px", border: "none", borderRadius: 12, background: "#C2A06B", color: "#2A2113", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 12px rgba(194,160,107,0.3)" }}>View Plan Summary →</button>
+              <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #D8D2C4", borderRadius: 12, background: "#FBFAF6", fontSize: 15, color: "#6B6655", cursor: "pointer", fontFamily: "inherit" }}>← Edit my details</button>
+              <button onClick={next} style={{ padding: "12px 28px", border: "none", borderRadius: 12, background: "#C2A06B", color: "#2A2113", fontSize: 15, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 2px 12px rgba(194,160,107,0.3)" }}>View Plan Summary →</button>
             </div>
           )}
 
           {stage === 7 && (
             <div className="no-print" style={{ marginTop: 20 }}>
-              <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #D8D2C4", borderRadius: 12, background: "#FBFAF6", fontSize: 14, color: "#6B6655", cursor: "pointer", fontFamily: "inherit" }}>← Back to Analysis</button>
+              <button onClick={back} style={{ padding: "12px 24px", border: "1.5px solid #D8D2C4", borderRadius: 12, background: "#FBFAF6", fontSize: 15, color: "#6B6655", cursor: "pointer", fontFamily: "inherit" }}>← Back to Analysis</button>
             </div>
           )}
         </div>
