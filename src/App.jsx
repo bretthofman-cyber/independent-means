@@ -19,13 +19,13 @@ import ActionPlanScreen from "./ActionPlanStage.jsx";
 import PdfReport from "./PdfReport.jsx";
 
 const STAGES = [
-  { id: 1, label: "Profile",  icon: "👤", title: "Household Profile",     subtitle: "Let's start with the basics" },
-  { id: 2, label: "Income",   icon: "💰", title: "Income & Cashflow",      subtitle: "Your earnings and spending" },
-  { id: 3, label: "Assets",   icon: "🏦", title: "Assets & Savings",       subtitle: "What you own and hold" },
-  { id: 4, label: "Property", icon: "🏠", title: "Property & Debt",        subtitle: "Leverage and obligations" },
-  { id: 5, label: "Super",    icon: "📈", title: "Super & Goals",           subtitle: "Retirement engine and priorities" },
-  { id: 6, label: "Analysis", icon: "✦",  title: "Your Financial Picture", subtitle: "Scenario, projections & discussion points" },
-  { id: 7, label: "Summary",  icon: "📋", title: "Your Financial Summary", subtitle: "Observations based on your inputs" },
+  { id: 1, label: "Profile",  icon: (a) => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="15" r="9" fill={a ? "#EDE7D7" : "#2E4A3D"}/><path d="M8 41 C8 28 40 28 40 41 Z" fill={a ? "#EDE7D7" : "#2E4A3D"}/></svg>), title: "Household Profile",     subtitle: "Let's start with the basics" },
+  { id: 2, label: "Income",   icon: (a) => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" fill="none"><rect x="6" y="16" width="36" height="24" rx="4" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="6" y="24" width="36" height="6" fill="#C2A06B"/><rect x="30" y="22" width="8" height="10" rx="2" fill={a ? "#2E4A3D" : "#F5F2EB"}/></svg>), title: "Income & Cashflow",      subtitle: "Your earnings and spending" },
+  { id: 3, label: "Assets",   icon: (a) => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" fill="none"><path d="M6 18 L24 8 L42 18 Z" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="9" y="18" width="6" height="16" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="21" y="18" width="6" height="16" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="33" y="18" width="6" height="16" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="6" y="34" width="36" height="6" rx="1" fill="#C2A06B"/></svg>), title: "Assets & Savings",       subtitle: "What you own and hold" },
+  { id: 4, label: "Property", icon: (a) => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" fill="none"><path d="M24 7 L40 21 L8 21 Z" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="10" y="21" width="28" height="11" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="10" y="32" width="28" height="9" rx="1" fill="#C2A06B"/><rect x="20" y="33.5" width="8" height="6" fill={a ? "#2E4A3D" : "#FBFAF6"}/></svg>), title: "Property & Debt",        subtitle: "Leverage and obligations" },
+  { id: 5, label: "Super",    icon: (a) => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" fill="none"><rect x="7" y="30" width="6" height="8" rx="2" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="18" y="24" width="6" height="14" rx="2" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="29" y="16" width="6" height="22" rx="2" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="40" y="6" width="6" height="32" rx="2" fill="#C2A06B"/></svg>), title: "Super & Goals",           subtitle: "Retirement engine and priorities" },
+  { id: 6, label: "Analysis", icon: (a) => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="15" stroke={a ? "#EDE7D7" : "#2E4A3D"} strokeOpacity="0.25" strokeWidth="6" fill="none"/><path d="M24 9 A15 15 0 1 1 8.8 27.5" stroke="#C2A06B" strokeWidth="6" strokeLinecap="round" fill="none"/><circle cx="8.8" cy="27.5" r="4" fill="#C2A06B"/></svg>), title: "Your Financial Picture", subtitle: "Scenario, projections & discussion points" },
+  { id: 7, label: "Summary",  icon: (a) => (<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 48 48" fill="none"><rect x="7" y="9" width="8" height="8" rx="2" fill="#C2A06B"/><rect x="19" y="11" width="22" height="4" rx="2" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="7" y="20" width="8" height="8" rx="2" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="19" y="22" width="22" height="4" rx="2" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="7" y="31" width="8" height="8" rx="2" fill={a ? "#EDE7D7" : "#2E4A3D"}/><rect x="19" y="33" width="22" height="4" rx="2" fill={a ? "#EDE7D7" : "#2E4A3D"}/></svg>), title: "Your Financial Summary", subtitle: "Observations based on your inputs" },
 ];
 
 
@@ -1153,7 +1153,7 @@ export default function IndependentMeans() {
                   borderRadius: 6, cursor: "pointer", position: "relative",
                   display: "flex", flexDirection: "column", alignItems: "center", gap: 2, transition: "all 0.2s",
                 }}>
-                <div style={{ fontSize: 12 }}>{s.icon}</div>
+                <div style={{ lineHeight: 0 }}>{s.icon(isActive)}</div>
                 <div style={{ fontSize: 8, fontWeight: 600, letterSpacing: "0.04em", color: isActive ? "#EDE7D7" : s.id < stage ? "#2E4A3D" : "#9DB0A1", textTransform: "uppercase" }}>{s.label}</div>
                 {hasData && !isActive && (
                   <div style={{ position: "absolute", top: 4, right: 4, width: 5, height: 5, borderRadius: "50%", background: "#2E4A3D" }} />
