@@ -1,6 +1,5 @@
 // Annual Budget XLSX export — Quiet Wealth brand styling
 // Fonts: Georgia (≈ Spectral) for headings/totals · Calibri for body (Excel default)
-import * as XLSX from "xlsx-js-style";
 import { BUDGET_CATS } from "./budgetCats.js";
 import { itemMonthly } from "./BudgetStage.jsx";
 
@@ -170,7 +169,7 @@ const S = {
   },
 };
 
-export function exportBudgetXlsx(data, startMonth = 7) {
+export async function exportBudgetXlsx(data, startMonth = 7) {
   const items  = data.budgetItems || [];
   const name   = data.firstName ? `${data.firstName}'s Annual Budget` : "Annual Budget";
   const fyInfo = getFYInfo(startMonth);
@@ -294,6 +293,7 @@ export function exportBudgetXlsx(data, startMonth = 7) {
   ];
 
   // ── Workbook + download ───────────────────────────────────────────────────
+  const XLSX = await import("xlsx-js-style");
   const wb  = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Annual Budget");
   const buf  = XLSX.write(wb, { bookType: "xlsx", type: "array" });
