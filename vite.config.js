@@ -6,6 +6,18 @@ export default defineConfig({
     environment: 'node',
   },
   plugins: [react()],
+  build: {
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) return 'vendor-react';
+          if (id.includes('@clerk/clerk-react')) return 'vendor-auth';
+          if (id.includes('@supabase/supabase-js')) return 'vendor-db';
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       '/api/anthropic': {
