@@ -293,7 +293,7 @@ export async function exportBudgetXlsx(data, startMonth = 7) {
   ];
 
   // ── Workbook + download ───────────────────────────────────────────────────
-  const XLSX = await import("xlsx-js-style");
+  const { default: XLSX } = await import("xlsx-js-style");
   const wb  = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Annual Budget");
   const buf  = XLSX.write(wb, { bookType: "xlsx", type: "array" });

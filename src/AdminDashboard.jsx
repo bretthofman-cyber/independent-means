@@ -69,7 +69,7 @@ function GateClicksPanel({ from, to, getToken }) {
     adminFetch(getToken, "gate_clicks", { from, to })
       .then(r => setRows(r.data))
       .catch(e => setError(e.message));
-  }, [from, to]);
+  }, [from, to, getToken]);
 
   return (
     <div style={panelStyle}>
@@ -116,7 +116,7 @@ function FunnelPanel({ from, to, getToken }) {
     adminFetch(getToken, "funnel", { from, to })
       .then(r => setData(r.data))
       .catch(e => setError(e.message));
-  }, [from, to]);
+  }, [from, to, getToken]);
 
   return (
     <div style={panelStyle}>
@@ -158,7 +158,7 @@ function TrialConversionPanel({ getToken }) {
     adminFetch(getToken, "trial_conversion")
       .then(r => setRows(r.data))
       .catch(e => setError(e.message));
-  }, []);
+  }, [getToken]);
 
   return (
     <div style={panelStyle}>

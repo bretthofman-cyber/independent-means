@@ -368,7 +368,7 @@ function FinancialPositionPage({ data, engine }) {
   const cards = [
     m?.fireNumber         && { label: "FIRE Number",        value: fmtFull(m.fireNumber),       sub: "Target net worth at retirement" },
     m?.projectedSuper     && { label: "Projected Super",    value: fmtFull(m.projectedSuper),   sub: `At age ${data.retirementAge}` },
-    m?.debtFreeYear       && { label: "Debt-Free Year",     value: String(m.debtFreeYear),      sub: "PPOR mortgage cleared" },
+    engine?.mortgage?.debtFreeYear && { label: "Debt-Free Year", value: String(engine.mortgage.debtFreeYear), sub: "PPOR mortgage cleared" },
     last?.netWorth != null && { label: "Net Worth at " + last?.age, value: fmtFull(last?.netWorth), sub: "End of projection" },
   ].filter(Boolean);
 

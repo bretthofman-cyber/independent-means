@@ -24,11 +24,12 @@ export default async function handler(req, res) {
 
   let sub;
   try {
-    const { data } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from("subscriptions")
       .select("stripe_customer_id")
       .eq("user_id", clerkUserId)
       .maybeSingle();
+    if (error) throw error;
     sub = data;
   } catch {
     return res.status(500).json({ error: "Failed to look up subscription" });

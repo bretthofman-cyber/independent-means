@@ -31,7 +31,7 @@ export default async function handler(req, res) {
   } catch {
     return res.status(500).json({ error: "Auth lookup failed" });
   }
-  if (userEmail !== process.env.ADMIN_EMAIL) {
+  if (typeof userEmail !== "string" || !process.env.ADMIN_EMAIL || userEmail !== process.env.ADMIN_EMAIL) {
     return res.status(403).json({ error: "Forbidden" });
   }
 

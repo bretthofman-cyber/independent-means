@@ -165,7 +165,7 @@ export function projectionCsvRows(derivedData, baseEngine, withScenarios) {
   }
 
   const headers = withScenarios
-    ? [...BASE_PROJ_HEADERS, "base_net_worth", "conservative_net_worth", "aggressive_net_worth"]
+    ? [...BASE_PROJ_HEADERS, "conservative_net_worth", "aggressive_net_worth"]
     : BASE_PROJ_HEADERS;
 
   const rows = trajectory.map((pt, i) => {
@@ -181,7 +181,6 @@ export function projectionCsvRows(derivedData, baseEngine, withScenarios) {
     ];
     if (withScenarios) {
       base.push(
-        pt.netWorth,
         consTrajectory?.[i]?.netWorth ?? "",
         aggTrajectory?.[i]?.netWorth  ?? ""
       );

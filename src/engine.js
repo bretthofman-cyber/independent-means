@@ -42,6 +42,13 @@ function p(val) {
   return parseFloat(String(val ?? "").replace(/,/g, "")) || 0;
 }
 
+// Like p() but returns `def` only when the field is blank/absent, not when the user entered 0.
+function pOr(val, def) {
+  if (val == null || String(val).trim() === "") return def;
+  const n = parseFloat(String(val).replace(/,/g, ""));
+  return isNaN(n) ? def : n;
+}
+
 function fvLump(pv, r, n) {
   return pv * Math.pow(1 + r, n);
 }
@@ -271,8 +278,8 @@ export function calculateHouseholdTax(data, ipCashflows, { skipAdvancedTax = fal
  * (and therefore reduces deductible interest — important for ATO compliance).
  */
 export function propertyAnnualCashflow(ip) {
-  const vacancyRate  = (p(ip.vacancyRate)  || 4) / 100;
-  const mgmtFeeRate  = (p(ip.managementFee) || 8) / 100;
+  const vacancyRate  = pOr(ip.vacancyRate,  4) / 100;
+  const mgmtFeeRate  = pOr(ip.managementFee, 8) / 100;
 
   const grossRent     = p(ip.weeklyRent) * 52 * (1 - vacancyRate);
   const mgmtFee       = grossRent * mgmtFeeRate;
@@ -354,8 +361,8 @@ export function projectSuper(data, assumptions) {
   const retirementAge = p(data.retirementAge) || 65;
   const isCouple      = data.hasPartner === "yes";
 
-  const sgRate1   = (p(data.employerSgRate) || 12) / 100;
-  const sgRate2   = isCouple ? (p(data.partnerEmployerSgRate) || 12) / 100 : 0;
+  const sgRate1   = pOr(data.employerSgRate, 12) / 100;
+  const sgRate2   = isCouple ? pOr(data.partnerEmployerSgRate, 12) / 100 : 0;
   const gross1    = p(data.grossIncome) + p(data.bonusIncome) + p(data.otherIncome);
   const gross2    = isCouple ? p(data.partnerIncome) + p(data.partnerBonusIncome) + p(data.partnerOtherIncome) : 0;
   const ss1       = p(data.salarySacrifice);
@@ -663,8 +670,8 @@ export function fireCalc(data, assumptions) {
   // Annual investment into super (post contributions tax)
   const gross1    = p(data.grossIncome) + p(data.bonusIncome) + p(data.otherIncome);
   const gross2    = isCouple ? p(data.partnerIncome) + p(data.partnerBonusIncome) + p(data.partnerOtherIncome) : 0;
-  const sgRate1   = (p(data.employerSgRate) || 12) / 100;
-  const sgRate2   = isCouple ? (p(data.partnerEmployerSgRate) || 12) / 100 : 0;
+  const sgRate1   = pOr(data.employerSgRate, 12) / 100;
+  const sgRate2   = isCouple ? pOr(data.partnerEmployerSgRate, 12) / 100 : 0;
   const ss1       = p(data.salarySacrifice);
   const ss2       = isCouple ? p(data.partnerSalarySacrifice) : 0;
   const concess1  = Math.min(gross1 * sgRate1 + ss1, SUPER.concessionalCap);
@@ -848,7 +855,7 @@ export function netWorthTrajectory(data, assumptions, householdTax) {
       liquid   = liquid * (1 + r) + effectiveSavings + ipNetAnnualCF + negGearBenefit + frankingRefund + drTaxSaving - liquidInsurance;
       superBal = superBal * (1 + r) + effectiveSuperIn - superInsurance;
     } else {
-      const withdrawal = targetSpending * Math.pow(1 + inf, y - (retirementAge - currentAge));
+      const withdrawal = targetSpending * Math.pow(1 + inf, y);
       if (superBal >= withdrawal) {
         superBal = superBal * (1 + r) - withdrawal;
         liquid   = liquid * (1 + r);
@@ -1002,7 +1009,7 @@ function calculateTTR(data, assumptions) {
     return { eligible: false };
   }
 
-  const sgRate            = (p(data.employerSgRate) || 12) / 100;
+  const sgRate            = pOr(data.employerSgRate, 12) / 100;
   const existingConcessional = Math.min(grossIncome * sgRate + p(data.salarySacrifice), SUPER.concessionalCap);
   const additionalSSRoom  = Math.max(0, SUPER.concessionalCap - existingConcessional);
 
@@ -1083,7 +1090,7 @@ export function runEngine(data, { skipMonteCarlo = false, skipAdvancedTax = fals
   const lifeExp          = p(data.lifeExpectancy) || 90;
   const isCouple         = data.hasPartner === "yes";
   const isHomeowner      = data.homeOwnership === "owner" || data.homeOwnership === "mortgage";
-  const atRetirementNW   = atRetirement?.netWorth || 0;
+  const atRetirementNW   = (atRetirement ?? trajectory[0])?.netWorth || 0;
   const ppOrVal          = p(data.ppOrValue);
   const yearsToRet       = Math.max(0, retirementAge - p(data.age));
   const projectedPPOR    = ppOrVal > 0 ? ppOrVal * Math.pow(1 + assumptions.propertyGrowth / 100, yearsToRet) : 0;

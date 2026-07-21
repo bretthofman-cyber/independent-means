@@ -18,11 +18,12 @@ export const EntitlementContext = createContext({
 const TRIAL_DAYS = 14;
 
 async function fetchSubscription(userId) {
-  const { data: row } = await supabase
+  const { data: row, error } = await supabase
     .from("subscriptions")
     .select("status, trial_ends_at, stripe_customer_id")
     .eq("user_id", userId)
     .maybeSingle();
+  if (error) throw error;
   return row ?? null;
 }
 
@@ -56,7 +57,7 @@ export function useEntitlement(userId, getToken) {
     setIsLoading(true);
     fetchSubscription(userId)
       .then(applyRow)
-      .catch(() => setStatus("free"))
+      .catch(err => console.error("[fetchSubscription]", err.message))
       .finally(() => setIsLoading(false));
   }, [userId, applyRow]);
 
@@ -108,8 +109,12 @@ export function useEntitlement(userId, getToken) {
 
   const refreshSubscription = useCallback(async () => {
     if (!userId) return;
-    const row = await fetchSubscription(userId);
-    applyRow(row);
+    try {
+      const row = await fetchSubscription(userId);
+      applyRow(row);
+    } catch (err) {
+      console.error("[refreshSubscription]", err.message);
+    }
   }, [userId, applyRow]);
 
   const openPortal = useCallback(async () => {

@@ -24,13 +24,12 @@ export async function handleWebhookEvent(event, supabase) {
       const userId  = session.metadata?.user_id;
       if (!userId) return { ok: false, reason: "no user_id in metadata" };
 
-      await supabase.from("subscriptions").upsert(
+      const { error: e1 } = await supabase.from("subscriptions").upsert(
         {
           user_id:                 userId,
           stripe_customer_id:      session.customer,
           stripe_subscription_id:  session.subscription,
           status:                  "active",
-          // Clear any existing trial fields — user is now a paying subscriber
           trial_started_at:        null,
           trial_ends_at:           null,
           current_period_end:      null,
@@ -38,6 +37,7 @@ export async function handleWebhookEvent(event, supabase) {
         },
         { onConflict: "user_id" }
       );
+      if (e1) { console.error("[webhook] checkout.session.completed DB error:", e1.message); return { ok: false, reason: e1.message }; }
       return { ok: true };
     }
 
@@ -46,7 +46,7 @@ export async function handleWebhookEvent(event, supabase) {
       const userId = sub.metadata?.user_id;
       if (!userId) return { ok: false, reason: "no user_id in metadata" };
 
-      await supabase.from("subscriptions").upsert(
+      const { error: e2 } = await supabase.from("subscriptions").upsert(
         {
           user_id:                userId,
           stripe_subscription_id: sub.id,
@@ -57,6 +57,7 @@ export async function handleWebhookEvent(event, supabase) {
         },
         { onConflict: "user_id" }
       );
+      if (e2) { console.error("[webhook] customer.subscription.updated DB error:", e2.message); return { ok: false, reason: e2.message }; }
       return { ok: true };
     }
 
@@ -65,9 +66,10 @@ export async function handleWebhookEvent(event, supabase) {
       const userId = sub.metadata?.user_id;
       if (!userId) return { ok: false, reason: "no user_id in metadata" };
 
-      await supabase.from("subscriptions")
+      const { error: e3 } = await supabase.from("subscriptions")
         .update({ status: "canceled", updated_at: now })
         .eq("user_id", userId);
+      if (e3) { console.error("[webhook] customer.subscription.deleted DB error:", e3.message); return { ok: false, reason: e3.message }; }
       return { ok: true };
     }
 
@@ -76,9 +78,10 @@ export async function handleWebhookEvent(event, supabase) {
       const subscriptionId = invoice.subscription;
       if (!subscriptionId) return { ok: false, reason: "no subscription on invoice" };
 
-      await supabase.from("subscriptions")
+      const { error: e4 } = await supabase.from("subscriptions")
         .update({ status: "past_due", updated_at: now })
         .eq("stripe_subscription_id", subscriptionId);
+      if (e4) { console.error("[webhook] invoice.payment_failed DB error:", e4.message); return { ok: false, reason: e4.message }; }
       return { ok: true };
     }
 

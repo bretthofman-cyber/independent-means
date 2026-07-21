@@ -1771,10 +1771,10 @@ function AnalysisScreen({ data, set }) {
           data={derivedData}
           engine={engine}
           onClose={() => setShowImproveModal(false)}
-          onOpenStrategyCentre={() => setShowStrategyCentre(true)}
+          onOpenStrategyCentre={() => can(FEATURES.STRATEGY_CENTRE) ? setShowStrategyCentre(true) : openPricing()}
         />
       )}
-      {showStrategyCentre && (
+      {showStrategyCentre && can(FEATURES.STRATEGY_CENTRE) && (
         <StrategyCentre
           data={derivedData}
           engine={engine}
@@ -1787,7 +1787,7 @@ function AnalysisScreen({ data, set }) {
         <ScenarioComparisonRow data={derivedData} />
       </PremiumGate>
       {(data.budgetItems || []).length > 0 && (() => {
-        const netMo = estimateNetMonthly(data);
+        const netMo = estimateNetMonthly(derivedData);
         const startCash = deriveAssetTotals(data.assetItems).cashSavings;
         return netMo > 0
           ? <CashflowCalendar items={data.budgetItems} netMonthly={netMo} startingCash={startCash} />

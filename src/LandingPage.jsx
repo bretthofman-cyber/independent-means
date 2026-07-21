@@ -48,11 +48,16 @@ function LoginScreen() {
   async function signInWith(strategy) {
     if (!isLoaded || loadingProvider) return;
     setLoadingProvider(strategy);
-    await signIn.authenticateWithRedirect({
-      strategy,
-      redirectUrl:          SSO_CALLBACK,
-      redirectUrlComplete:  window.location.origin,
-    });
+    try {
+      await signIn.authenticateWithRedirect({
+        strategy,
+        redirectUrl:         SSO_CALLBACK,
+        redirectUrlComplete: window.location.origin,
+      });
+    } catch (err) {
+      console.error("[signInWith]", err.message);
+      setLoadingProvider(null);
+    }
   }
 
   const loading = !!loadingProvider;

@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const { planType, successUrl, cancelUrl } = req.body ?? {};
+  const { planType } = req.body ?? {};
   const priceMap = {
     monthly: process.env.STRIPE_PRICE_MONTHLY,
     annual:  process.env.STRIPE_PRICE_ANNUAL,
@@ -34,11 +34,12 @@ export default async function handler(req, res) {
 
   let sub;
   try {
-    const { data } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
       .from("subscriptions")
       .select("stripe_customer_id")
       .eq("user_id", clerkUserId)
       .maybeSingle();
+    if (error) throw error;
     sub = data;
   } catch {
     return res.status(500).json({ error: "Failed to look up subscription" });
@@ -59,8 +60,8 @@ export default async function handler(req, res) {
   const sessionParams = {
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: successUrl ?? `${process.env.APP_URL}?checkout=success`,
-    cancel_url:  cancelUrl  ?? `${process.env.APP_URL}?checkout=cancelled`,
+    success_url: `${process.env.APP_URL}?checkout=success`,
+    cancel_url:  `${process.env.APP_URL}?checkout=cancelled`,
     metadata: { user_id: clerkUserId },
     subscription_data: { metadata: { user_id: clerkUserId } },
     allow_promotion_codes: true,
