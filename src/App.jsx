@@ -970,16 +970,22 @@ export default function IndependentMeans() {
 
   async function loadPlan(userId) {
     setPlanLoading(true);
-    const { data: row } = await supabase
-      .from("plans")
-      .select("data, stage")
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (row) {
-      setData(parseData(row.data));
-      setStage(Math.max(1, Math.min(7, row.stage || 1)));
+    try {
+      const { data: row, error } = await supabase
+        .from("plans")
+        .select("data, stage")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      if (row) {
+        setData(parseData(row.data));
+        setStage(Math.max(1, Math.min(7, row.stage || 1)));
+      }
+    } catch (err) {
+      console.error("[loadPlan]", err.message);
+    } finally {
+      setPlanLoading(false);
     }
-    setPlanLoading(false);
   }
 
   function savePlan(nextData, nextStage) {
