@@ -1233,17 +1233,17 @@ export default function IndependentMeans() {
             <div style={{ fontSize: 15, color: "#6B6655" }}>{currentStage.subtitle}</div>
           </div>
 
-          <Suspense fallback={null}>
           <div ref={scrollRef} className="stage-content-card" style={{ background: "#FBFAF6", borderRadius: 18, border: "1px solid #ECE7DB", padding: "28px", animation: "fadeIn 0.25s ease", boxShadow: "0 2px 16px rgba(0,0,0,0.04)" }}>
-            {stage === 1 && <Stage1 data={data} set={set} />}
-            {stage === 2 && <Stage2 data={data} setMany={setMany} />}
-            {stage === 3 && <AssetStage3 data={data} setMany={setMany} />}
-            {stage === 4 && <Stage4 data={data} set={set} />}
-            {stage === 5 && <Stage5 data={data} set={set} />}
-            {stage === 6 && <AnalysisScreen data={data} set={set} entitlement={entitlement} />}
-            {stage === 7 && <ActionPlanScreen data={data} entitlement={entitlement} />}
+            <Suspense fallback={null}>
+              {stage === 1 && <Stage1 data={data} set={set} />}
+              {stage === 2 && <Stage2 data={data} setMany={setMany} />}
+              {stage === 3 && <AssetStage3 data={data} setMany={setMany} />}
+              {stage === 4 && <Stage4 data={data} set={set} />}
+              {stage === 5 && <Stage5 data={data} set={set} />}
+              {stage === 6 && <AnalysisScreen data={data} set={set} entitlement={entitlement} />}
+              {stage === 7 && <ActionPlanScreen data={data} entitlement={entitlement} />}
+            </Suspense>
           </div>
-          </Suspense>
 
           {stage < 6 && (
             <div className="no-print" style={{ display: "flex", justifyContent: "space-between", marginTop: 20 }}>
