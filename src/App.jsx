@@ -11,9 +11,9 @@ import TrialBanner from "./TrialBanner.jsx";
 import { FEATURES } from "./features.js";
 import { trackSubscriptionActivated, setAnalyticsTokenGetter } from "./analytics.js";
 import { SiteFooter } from "./LegalModals.jsx";
+import AssetStage3 from "./AssetStage.jsx";
 
 const Stage2           = lazy(() => import("./BudgetStage.jsx"));
-const AssetStage3      = lazy(() => import("./AssetStage.jsx"));
 const AnalysisScreen   = lazy(() => import("./AnalysisStage.jsx"));
 const ActionPlanScreen = lazy(() => import("./ActionPlanStage.jsx"));
 const PdfReport        = lazy(() => import("./PdfReport.jsx"));
