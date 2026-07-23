@@ -118,6 +118,10 @@ export function estimateNetMonthly(data) {
 }
 
 export function itemMonthly(item) {
+  if (item?.seasonal && Array.isArray(item?.monthlyAmounts)) {
+    const p = v => parseFloat(String(v || "").replace(/,/g, "")) || 0;
+    return item.monthlyAmounts.reduce((s, v) => s + p(v), 0) / 12;
+  }
   const amount = parseFloat(String(item?.amount || "").replace(/,/g, "")) || 0;
   if (item?.frequency === "annual")    return amount / 12;
   if (item?.frequency === "quarterly") return amount / 3;
@@ -137,11 +141,13 @@ export function budgetTotal(items) {
 export function buildCashflowCalendar(items, netMonthlyIncome, startingCash = 0) {
   const p = v => parseFloat(String(v || "").replace(/,/g, "")) || 0;
   const all = items || [];
-  const monthlyItems      = all.filter(i => i.frequency === "monthly");
-  const annualWithMonth   = all.filter(i => i.frequency === "annual"    && i.month);
-  const annualNoMonth     = all.filter(i => i.frequency === "annual"    && !i.month);
-  const quarterlyWithMonth= all.filter(i => i.frequency === "quarterly" && i.month);
-  const quarterlyNoMonth  = all.filter(i => i.frequency === "quarterly" && !i.month);
+  const seasonalItems     = all.filter(i => i.seasonal);
+  const nonSeasonal       = all.filter(i => !i.seasonal);
+  const monthlyItems      = nonSeasonal.filter(i => i.frequency === "monthly");
+  const annualWithMonth   = nonSeasonal.filter(i => i.frequency === "annual"    && i.month);
+  const annualNoMonth     = nonSeasonal.filter(i => i.frequency === "annual"    && !i.month);
+  const quarterlyWithMonth= nonSeasonal.filter(i => i.frequency === "quarterly" && i.month);
+  const quarterlyNoMonth  = nonSeasonal.filter(i => i.frequency === "quarterly" && !i.month);
 
   const fixedMonthly =
     monthlyItems.reduce((s, i) => s + p(i.amount), 0) +
@@ -156,9 +162,10 @@ export function buildCashflowCalendar(items, netMonthlyIncome, startingCash = 0)
     const qtrSpikes = quarterlyWithMonth.filter(i => ((monthNum - parseInt(i.month) + 12) % 3) === 0);
     const spikes    = [...annSpikes, ...qtrSpikes];
     const annualDue = spikes.reduce((s, i) => s + p(i.amount), 0);
-    const net = netMonthlyIncome - fixedMonthly - annualDue;
+    const seasonal  = seasonalItems.reduce((s, i) => s + p((i.monthlyAmounts || [])[idx]), 0);
+    const net = netMonthlyIncome - fixedMonthly - annualDue - seasonal;
     cumulative += net;
-    return { name, short: MONTH_SHORT[idx], income: netMonthlyIncome, fixed: fixedMonthly, annual: annualDue, spikes, net, cumulative };
+    return { name, short: MONTH_SHORT[idx], income: netMonthlyIncome, fixed: fixedMonthly, seasonal, annual: annualDue, spikes, net, cumulative };
   });
 }
 
@@ -380,11 +387,56 @@ export function CashflowCalendar({ items, netMonthly, startingCash = 0, compact 
 const FREQ_CYCLE = { monthly: "quarterly", quarterly: "annual", annual: "monthly" };
 const FREQ_LABEL = { monthly: "Mo", quarterly: "Qtr", annual: "Yr" };
 
+function MonthInput({ label, value, onChange }) {
+  const [focused, setFocused] = useState(false);
+  const num = parseFloat(String(value || "").replace(/,/g, "")) || 0;
+  const displayed = focused ? (value || "") : (num > 0 ? num.toLocaleString() : "");
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+      <span style={{ fontSize: 10, fontWeight: 600, color: "#8A8270", width: 22, flexShrink: 0 }}>{label}</span>
+      <div style={{ position: "relative", flex: 1 }}>
+        <span style={{ position: "absolute", left: 7, top: "50%", transform: "translateY(-50%)", fontSize: 11, color: "#6b8f84", pointerEvents: "none" }}>$</span>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={displayed}
+          onChange={e => onChange(e.target.value.replace(/[^0-9.]/g, ""))}
+          placeholder="0"
+          style={{
+            width: "100%", padding: "5px 6px 5px 17px",
+            border: `1px solid ${focused ? "#3d6b5e" : "#D8D2C4"}`, borderRadius: 6,
+            fontSize: 12, color: "#21241E", background: "#FBFAF6",
+            outline: "none", fontFamily: "inherit", boxSizing: "border-box",
+          }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+        />
+      </div>
+    </div>
+  );
+}
+
 function BudgetItem({ item, onUpdate, onRemove }) {
   const monthly      = itemMonthly(item);
   const freq         = item.frequency || "monthly";
   const isNonMonthly = freq !== "monthly";
   const nextFreq     = FREQ_CYCLE[freq] || "monthly";
+
+  function toggleSeasonal() {
+    if (item.seasonal) {
+      const avg = String(Math.round(monthly) || "");
+      onUpdate(item.id, { seasonal: false, monthlyAmounts: null, amount: avg, frequency: "monthly" });
+    } else {
+      const cur = String(Math.round(monthly) || "");
+      onUpdate(item.id, { seasonal: true, monthlyAmounts: Array(12).fill(cur), frequency: "monthly" });
+    }
+  }
+
+  function updateMonth(idx, value) {
+    const next = [...(item.monthlyAmounts || Array(12).fill(""))];
+    next[idx] = value;
+    onUpdate(item.id, { monthlyAmounts: next });
+  }
 
   const removeBtn = (
     <button
@@ -398,6 +450,21 @@ function BudgetItem({ item, onUpdate, onRemove }) {
       onMouseEnter={e => e.currentTarget.style.color = "#9a3922"}
       onMouseLeave={e => e.currentTarget.style.color = "#D8D2C4"}
     >×</button>
+  );
+
+  const seasonalBtn = (
+    <button
+      onClick={toggleSeasonal}
+      title={item.seasonal ? "Back to single amount" : "Vary amount by month"}
+      style={{
+        flexShrink: 0, padding: "6px 9px", border: "1.5px solid",
+        borderColor: item.seasonal ? "#C2A06B" : "#D8D2C4", borderRadius: 7,
+        fontSize: 11, fontWeight: 600,
+        color: item.seasonal ? "#7A5C2A" : "#8A8270",
+        background: item.seasonal ? "#FDF4E7" : "#FBFAF6",
+        cursor: "pointer", fontFamily: "inherit",
+      }}
+    >≈</button>
   );
 
   const freqBtn = (
@@ -415,11 +482,36 @@ function BudgetItem({ item, onUpdate, onRemove }) {
     >{FREQ_LABEL[freq]}</button>
   );
 
+  // ── Seasonal: 12-month grid ──────────────────────────────────────────────────
+  if (item.seasonal) {
+    const amounts = item.monthlyAmounts || Array(12).fill("");
+    return (
+      <div style={{ padding: "8px 14px 10px", borderBottom: "1px solid #F5F2EB", background: "white" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+          <div style={{ flex: 1, fontSize: 15, color: "#21241E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {item.label}
+          </div>
+          {monthly > 0 && (
+            <div style={{ fontSize: 10, color: "#9DB0A1", whiteSpace: "nowrap", flexShrink: 0 }}>
+              avg {currency(monthly)}/mo
+            </div>
+          )}
+          {seasonalBtn}
+          {removeBtn}
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "4px 6px" }}>
+          {MONTH_SHORT.map((m, idx) => (
+            <MonthInput key={m} label={m} value={amounts[idx] || ""} onChange={v => updateMonth(idx, v)} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   // ── Non-monthly (Qtr / Yr): two-row layout so label always has full width ──
   if (isNonMonthly) {
     return (
       <div style={{ padding: "8px 14px", borderBottom: "1px solid #F5F2EB", background: "white" }}>
-        {/* Row 1: label + /mo equivalent + remove */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
           <div style={{ flex: 1, fontSize: 15, color: "#21241E", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {item.label}
@@ -431,12 +523,12 @@ function BudgetItem({ item, onUpdate, onRemove }) {
           )}
           {removeBtn}
         </div>
-        {/* Row 2: amount + cycle button + month select */}
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <div style={{ flex: 1 }}>
             <Input value={item.amount} onChange={v => onUpdate(item.id, { amount: v })} placeholder="0" prefix="$" />
           </div>
           {freqBtn}
+          {seasonalBtn}
           <select
             value={item.month || ""}
             onChange={e => onUpdate(item.id, { month: e.target.value ? parseInt(e.target.value) : null })}
@@ -472,6 +564,7 @@ function BudgetItem({ item, onUpdate, onRemove }) {
         <Input value={item.amount} onChange={v => onUpdate(item.id, { amount: v })} placeholder="0" prefix="$" />
       </div>
       {freqBtn}
+      {seasonalBtn}
       {removeBtn}
     </div>
   );
@@ -820,7 +913,7 @@ export default function Stage2({ data, setMany }) {
   const items  = data.budgetItems || [];
   const n      = v => parseFloat(String(v || "").replace(/,/g, "")) || 0;
   const bTotal = budgetTotal(items);
-  const { can } = useContext(EntitlementContext);
+  const { can, openPricing } = useContext(EntitlementContext);
   const [startMonth, setStartMonth] = useState(7);
   const fyInfo = getFYInfo(startMonth);
 
@@ -1053,14 +1146,16 @@ export default function Stage2({ data, setMany }) {
                   }}>
                     Jul – Jun (Australian FY)
                   </span>
-                  <PremiumGate featureId={FEATURES.BUDGET_CUSTOM_FY} label="Custom year start">
-                    <span style={{
+                  <button
+                    onClick={openPricing}
+                    style={{
                       padding: "5px 12px", borderRadius: 8, cursor: "pointer",
                       border: "1.5px dashed #D8D2C4", fontSize: 12, color: "#9DB0A1",
-                    }}>
-                      Custom start month
-                    </span>
-                  </PremiumGate>
+                      background: "none", fontFamily: "inherit",
+                    }}
+                  >
+                    🔒 Custom start month
+                  </button>
                 </div>
               )}
             </div>
