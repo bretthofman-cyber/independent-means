@@ -43,7 +43,7 @@ const EMPTY_DATA = {
   // Stage 1
   firstName: "", age: "", partnerAge: "", partnerRetirementAge: "", hasPartner: "no",
   partnerName: "",
-  dependants: "0", location: "",
+  dependants: "0", dependantAges: [], location: "",
   retirementAge: "65", lifeExpectancy: "90", homeOwnership: "mortgage",
   privateHealthInsurance: "yes", partnerPrivateHealthInsurance: "yes",
   // Stage 2
@@ -172,6 +172,7 @@ function parseData(parsed) {
       partnerEmploymentStatus: parsed.partnerEmploymentStatus || "full-time",
       personalSuperContribs: parsed.personalSuperContribs || "",
       partnerPersonalSuperContribs: parsed.partnerPersonalSuperContribs || "",
+      dependantAges: Array.isArray(parsed.dependantAges) ? parsed.dependantAges : [],
       goals,
       customAssumptions: {
         base:         { ...DEFAULT_SCENARIOS.base,         ...(parsed.customAssumptions?.base         || {}) },
@@ -236,7 +237,12 @@ function Stage1({ data, set }) {
       )}
       <TwoCol>
         <Field label="Dependants">
-          <Select value={data.dependants} onChange={v => set("dependants", v)}
+          <Select value={data.dependants} onChange={v => {
+            const n = v === "5+" ? 5 : (parseInt(v) || 0);
+            const ages = [...(data.dependantAges || [])];
+            while (ages.length < n) ages.push("");
+            setMany({ dependants: v, dependantAges: ages.slice(0, n) });
+          }}
             options={["0","1","2","3","4","5+"].map(v => ({ value: v, label: v === "0" ? "None" : v }))} />
         </Field>
         <Field label="Location">
@@ -244,6 +250,33 @@ function Stage1({ data, set }) {
             options={[{ value: "", label: "Select state…" }, ...["NSW","VIC","QLD","WA","SA","TAS","ACT","NT"].map(s => ({ value: s, label: s }))]} />
         </Field>
       </TwoCol>
+      {(data.dependantAges || []).length > 0 && (
+        <div style={{ background: "#F0F4F1", border: "1px solid #C8D8CC", borderRadius: 10, padding: "14px 16px", marginTop: -4 }}>
+          <div style={{ fontSize: 13, color: "#4A6355", marginBottom: 12, fontWeight: 500 }}>
+            Dependant ages — used to phase out FTB and MLS relief as children age past eligibility
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+            {(data.dependantAges || []).map((age, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span style={{ fontSize: 13, color: "#6B8F84", whiteSpace: "nowrap" }}>Child {i + 1}</span>
+                <Input
+                  type="number" min="0" max="24" placeholder="Age"
+                  value={age}
+                  onChange={v => {
+                    const ages = [...(data.dependantAges || [])];
+                    ages[i] = v;
+                    set("dependantAges", ages);
+                  }}
+                  style={{ width: 72 }}
+                />
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 12, color: "#9DB0A1", marginTop: 10 }}>
+            FTB Part A phases out when a child turns 19 · FTB Part B phases out when youngest turns 13 (couples) · MLS relief phases out at 21
+          </div>
+        </div>
+      )}
       <SectionDivider label="Retirement horizon" />
       <TwoCol>
         <Field label={data.hasPartner === "yes" ? "Your target retirement age" : "Target retirement age"}>

@@ -31,7 +31,7 @@ function triggerDownload(filename, csv) {
 
 const PLAN_HEADERS = [
   "first_name", "age", "has_partner", "partner_name", "partner_age",
-  "partner_retirement_age", "dependants", "location",
+  "partner_retirement_age", "dependants", "dependant_ages_json", "location",
   "employment_status", "partner_employment_status",
   "retirement_age", "life_expectancy", "home_ownership",
   "private_health_insurance", "partner_private_health_insurance",
@@ -67,6 +67,7 @@ const PLAN_FIELD_MAP = {
   partner_age:                    d => d.partnerAge,
   partner_retirement_age:         d => d.partnerRetirementAge,
   dependants:                     d => d.dependants,
+  dependant_ages_json:            d => JSON.stringify(d.dependantAges || []),
   location:                       d => d.location,
   employment_status:              d => d.employmentStatus,
   partner_employment_status:      d => d.partnerEmploymentStatus,

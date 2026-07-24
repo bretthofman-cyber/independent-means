@@ -291,7 +291,9 @@ export function calculateHouseholdTax(data, ipCashflows, { skipAdvancedTax = fal
   const hecs1   = p(data.hecsDebt);
   const hecs2   = isCouple ? p(data.partnerHecsDebt) : 0;
 
-  const deps         = parseInt(data.dependants || "0") || 0;
+  // MLS family threshold uses count of children under 21 (current ages).
+  const dAges       = Array.isArray(data.dependantAges) ? data.dependantAges.map(a => parseInt(a) || 0) : [];
+  const deps        = dAges.length > 0 ? dAges.filter(a => a < 21).length : (parseInt(data.dependants || "0") || 0);
   const familyIncome = isCouple ? gross1 + gross2 : null;
   const p1Tax = calculatePersonTax(taxable1, { superConcessional: concess1, hasPrivateHealth: health1, hecsDebt: hecs1, excessConcessional: excessConc1, frankingCredits: fc1, skipAdvancedTax, familyIncome, dependants: deps });
   const p2Tax = isCouple ? calculatePersonTax(taxable2, { superConcessional: concess2, hasPrivateHealth: health2, hecsDebt: hecs2, excessConcessional: excessConc2, frankingCredits: fc2, skipAdvancedTax, familyIncome, dependants: deps }) : null;
@@ -523,7 +525,7 @@ export function estimateAgePension(isCouple, isHomeowner, assessableAssets, asse
  * Does not model children's individual ages; uses maximum age bracket rates.
  * Does not model shared care, blended families, or activity test requirements.
  */
-export function estimateFTB(dependants, primaryIncome, secondaryIncome, isCouple) {
+export function estimateFTB(dependants, primaryIncome, secondaryIncome, isCouple, youngestAge = 0) {
   if (!dependants || dependants <= 0) return { partA: 0, partB: 0, total: 0 };
 
   const familyIncome = primaryIncome + secondaryIncome;
@@ -540,10 +542,10 @@ export function estimateFTB(dependants, primaryIncome, secondaryIncome, isCouple
   }
   const partA = Math.round(partAPerChild * dependants);
 
-  // Part B — per family; primary earner income tested; assumes youngest child under 5 for maximum
+  // Part B — per family; primary earner income tested; rate depends on youngest child's age
   let partB = 0;
   if (primaryIncome < FTB.partBPrimaryMax) {
-    const maxPartB = FTB.partBMaxUnder5;
+    const maxPartB = youngestAge < 5 ? FTB.partBMaxUnder5 : FTB.partBMax5to12;
     if (!isCouple) {
       partB = maxPartB;
     } else {
@@ -554,6 +556,35 @@ export function estimateFTB(dependants, primaryIncome, secondaryIncome, isCouple
   }
 
   return { partA, partB, total: partA + partB };
+}
+
+/**
+ * Compute annual FTB entitlement for a specific trajectory year, phasing benefits out
+ * as children age past eligibility thresholds.
+ * FTB Part A: children under 19 (16 in full-time study; we use 19 as the cap)
+ * FTB Part B: youngest child under 13 for couples, under 18 for singles
+ */
+function ftbForYear(dependantAges, yearOffset, primaryIncome, secondaryIncome, isCouple) {
+  if (!dependantAges || dependantAges.length === 0) return 0;
+
+  const agesNow = dependantAges.map(a => a + yearOffset);
+
+  const partACutoff = 19;
+  const partBCutoff = isCouple ? 13 : 18;
+
+  const partAEligible = agesNow.filter(a => a < partACutoff).length;
+  if (partAEligible === 0) {
+    // Check if Part B alone applies (unlikely without Part A children, but guard)
+    const youngest = Math.min(...agesNow);
+    if (youngest >= partBCutoff) return 0;
+  }
+
+  const youngest = agesNow.length > 0 ? Math.min(...agesNow) : 99;
+  const partBApplies = youngest < partBCutoff;
+
+  if (partAEligible === 0 && !partBApplies) return 0;
+
+  return estimateFTB(partAEligible, primaryIncome, secondaryIncome, isCouple, youngest).total;
 }
 
 // ── DEBT-FREE DATE ────────────────────────────────────────────────────────────
@@ -843,7 +874,11 @@ export function netWorthTrajectory(data, assumptions, householdTax) {
   const deps        = parseInt(data.dependants || "0") || 0;
   const primaryG    = Math.max(gross1, gross2);
   const secondaryG  = Math.min(gross1, gross2);
-  const ftbAnnual   = deps > 0 ? estimateFTB(deps, primaryG, secondaryG, isCouple).total : 0;
+  // dependantAges enables year-by-year phaseout of FTB as children age past eligibility.
+  // Falls back to static count (treating all as age 0) when ages not provided.
+  const dependantAges = Array.isArray(data.dependantAges) && data.dependantAges.length > 0
+    ? data.dependantAges.map(a => parseInt(a) || 0)
+    : (deps > 0 ? Array(deps).fill(0) : []);
 
   // Callers spread deriveAssetTotals() flat onto data — read fields directly
   let liquid   = p(data.cashSavings) + p(data.sharesEtfs) + p(data.managedFunds) +
@@ -964,7 +999,8 @@ export function netWorthTrajectory(data, assumptions, householdTax) {
       // IP net cashflow + negative gearing benefit + franking refund + debt recycling saving
       // Outside-super insurance premiums reduce liquid savings; inside-super premiums reduce super balance
       const annualContribs = annualContribsForYear(data.assetContributions, nextCalYear, retirYear);
-      liquid   = liquid * (1 + r) + effectiveSavings + ipNetAnnualCF + negGearBenefit + frankingRefund + drTaxSaving - liquidInsurance + annualContribs + ftbAnnual;
+      const ftbThisYear = ftbForYear(dependantAges, y + 1, primaryG, secondaryG, isCouple);
+      liquid   = liquid * (1 + r) + effectiveSavings + ipNetAnnualCF + negGearBenefit + frankingRefund + drTaxSaving - liquidInsurance + annualContribs + ftbThisYear;
       superBal = superBal * (1 + r) + effectiveSuperIn - superInsurance;
     } else if (age < superAccessAge) {
       // Bridge phase: super locked in accumulation (no SG, no drawdown), liquid covers spending.
