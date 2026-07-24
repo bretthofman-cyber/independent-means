@@ -6,6 +6,8 @@ import { EntitlementContext } from "./useEntitlement.js";
 import PremiumGate from "./PremiumGate.jsx";
 import { FEATURES } from "./features.js";
 import { currency, Field, Input, Toggle, TwoCol, SectionDivider } from "./ui.jsx";
+import { itemMonthly, otherIncomeAnnual } from "./budgetUtils.js";
+export { itemMonthly, otherIncomeAnnual } from "./budgetUtils.js";
 
 // ─── CATEGORIES ──────────────────────────────────────────────────────────────
 
@@ -116,30 +118,6 @@ export function estimateNetMonthly(data) {
     ? (n(data.partnerBonusIncome) + n(data.partnerOtherIncome)) * 0.75 + oi.partner * 0.75
     : 0;
   return Math.max(0, Math.round((net1 + net2 + bonus1 + bonus2) / 12));
-}
-
-export function otherIncomeAnnual(data) {
-  return (data.otherIncomeItems || []).reduce(
-    (acc, item) => {
-      const annual  = itemMonthly(item) * 12;
-      const yourPct = (item.yourPct ?? 100) / 100;
-      acc.yours   += annual * yourPct;
-      acc.partner += annual * (1 - yourPct);
-      return acc;
-    },
-    { yours: 0, partner: 0 }
-  );
-}
-
-export function itemMonthly(item) {
-  if (item?.seasonal && Array.isArray(item?.monthlyAmounts)) {
-    const p = v => parseFloat(String(v || "").replace(/,/g, "")) || 0;
-    return item.monthlyAmounts.reduce((s, v) => s + p(v), 0) / 12;
-  }
-  const amount = parseFloat(String(item?.amount || "").replace(/,/g, "")) || 0;
-  if (item?.frequency === "annual")    return amount / 12;
-  if (item?.frequency === "quarterly") return amount / 3;
-  return amount;
 }
 
 export function budgetTotal(items) {

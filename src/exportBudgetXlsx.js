@@ -1,7 +1,7 @@
 // Annual Budget XLSX export — Quiet Wealth brand styling
 // Fonts: Georgia (≈ Spectral) for headings/totals · Calibri for body (Excel default)
 import { BUDGET_CATS } from "./budgetCats.js";
-import { itemMonthly } from "./BudgetStage.jsx";
+import { itemMonthly } from "./budgetUtils.js";
 import { contribMonthly, contribAmountForMonth } from "./assetUtils.js";
 
 const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];

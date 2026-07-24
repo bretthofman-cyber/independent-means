@@ -37,6 +37,7 @@ import {
   trackScenarioCreated,
   trackMonteCarloRun,
   trackStrategyModuleUsed,
+  setAnalyticsTokenGetter,
 } from "./analytics.js";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -55,6 +56,7 @@ async function flush() {
 
 beforeEach(() => {
   fetchMock.mockClear();
+  setAnalyticsTokenGetter(() => Promise.resolve("test-token-abc"));
 });
 
 afterEach(() => {

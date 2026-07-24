@@ -20,7 +20,7 @@ import {
 } from "./ausConfig.js";
 import { indexEventsByYear, getYearEventAdjustments } from "./lifeEvents.js";
 import { annualContribsForYear } from "./assetUtils.js";
-import { otherIncomeAnnual } from "./BudgetStage.jsx";
+import { otherIncomeAnnual } from "./budgetUtils.js";
 
 // ── REGULATORY PRESETS ────────────────────────────────────────────────────────
 // Versioned so that a 2027 ASIC review can add a new entry without altering saved plans.
@@ -877,6 +877,10 @@ export function netWorthTrajectory(data, assumptions, householdTax) {
 
     if (y === yearsTotal) break;
 
+    // Super can only be drawn after preservation age (60), even if retired earlier.
+    // Bridge phase: retired from work but super is locked — liquid funds the gap.
+    const superAccessAge = Math.max(retirementAge, SUPER.preservationAge);
+
     if (!isRetired) {
       // Apply life events for the UPCOMING year (y+1) — adjustments to cashflows
       const nextCalYear = currentYear + y + 1;
@@ -904,13 +908,20 @@ export function netWorthTrajectory(data, assumptions, householdTax) {
       const annualContribs = annualContribsForYear(data.assetContributions, nextCalYear, retirYear);
       liquid   = liquid * (1 + r) + effectiveSavings + ipNetAnnualCF + negGearBenefit + frankingRefund + drTaxSaving - liquidInsurance + annualContribs;
       superBal = superBal * (1 + r) + effectiveSuperIn - superInsurance;
-    } else {
+    } else if (age < superAccessAge) {
+      // Bridge phase: super locked in accumulation (no SG, no drawdown), liquid covers spending.
       const withdrawal = targetSpending * Math.pow(1 + inf, y);
-      if (superBal >= withdrawal) {
-        superBal = superBal * (1 + r) - withdrawal;
+      superBal = superBal * (1 + r);
+      liquid   = Math.max(0, liquid * (1 + r) - withdrawal);
+    } else {
+      // Super is accessible — draw target spending, enforcing ABP minimum drawdown.
+      const withdrawal  = targetSpending * Math.pow(1 + inf, y);
+      const actualDraw  = Math.max(withdrawal, abpMinDrawdown(superBal, age));
+      if (superBal >= actualDraw) {
+        superBal = superBal * (1 + r) - actualDraw;
         liquid   = liquid * (1 + r);
       } else {
-        const remainder = withdrawal - superBal;
+        const remainder = actualDraw - superBal;
         superBal = 0;
         liquid   = Math.max(0, liquid * (1 + r) - remainder);
       }

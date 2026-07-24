@@ -75,8 +75,10 @@ describe("Scenario 1 — Single renter accumulating ETFs and super", () => {
   });
 
   it("projects super growth over accumulation years", () => {
-    const last = e.trajectory[e.trajectory.length - 1];
-    expect(last.superBalance).toBeGreaterThan(150000);
+    // Check at retirement (first retired row), not at life expectancy end
+    // where super has been fully drawn down.
+    const atRetirement = e.trajectory.find(r => r.isRetired);
+    expect(atRetirement?.superBalance).toBeGreaterThan(150000);
   });
 
   it("calculates positive FIRE number", () => {

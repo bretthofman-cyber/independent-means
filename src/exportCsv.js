@@ -165,7 +165,10 @@ export function projectionCsvRows(derivedData, baseEngine, withScenarios) {
   }
 
   const headers = withScenarios
-    ? [...BASE_PROJ_HEADERS, "conservative_net_worth", "aggressive_net_worth"]
+    ? [
+        ...BASE_PROJ_HEADERS.map(h => h === "net_worth" ? "base_net_worth" : h),
+        "conservative_net_worth", "aggressive_net_worth",
+      ]
     : BASE_PROJ_HEADERS;
 
   const rows = trajectory.map((pt, i) => {
