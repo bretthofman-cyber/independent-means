@@ -1370,12 +1370,41 @@ export default function Stage2({ data, setMany }) {
 
       <SectionDivider label="Monthly Budget" />
 
-      {parseInt(data.dependants || "0") > 0 && !items.some(i => /child.?care/i.test(i.label)) && (
-        <div style={{ fontSize: 13, color: "#5a6e5e", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, padding: "10px 14px", marginBottom: 14, display: "flex", gap: 10, alignItems: "flex-start" }}>
-          <span style={{ flexShrink: 0, marginTop: 1 }}>✦</span>
-          <span>You have dependants — consider adding <strong>Childcare</strong> and <strong>School fees</strong> to your monthly budget below.</span>
-        </div>
-      )}
+      {(() => {
+        const dAges = (data.dependantAges || []).map(a => parseInt(a) || 0);
+        const hasAges = dAges.length > 0;
+        const deps = parseInt(data.dependants || "0") || 0;
+        const underEighteen = hasAges ? dAges.filter(a => a < 18) : (deps > 0 ? [0] : []);
+        if (underEighteen.length === 0) return null;
+
+        const hasChildcareItem = items.some(i => /child.?care|daycare|after.?school|oshc/i.test(i.label));
+        const hasSchoolFeeItem = items.some(i => /school.?fees?/i.test(i.label));
+
+        const suggest = [];
+        if (hasAges) {
+          if (dAges.some(a => a < 5) && !hasChildcareItem)       suggest.push("Childcare / daycare");
+          if (dAges.some(a => a >= 5 && a < 13) && !hasChildcareItem) suggest.push("After-school care (OSHC)");
+          if (dAges.some(a => a >= 5 && a < 18) && !hasSchoolFeeItem) suggest.push("School fees");
+        } else {
+          if (!hasChildcareItem) suggest.push("Childcare");
+          if (!hasSchoolFeeItem) suggest.push("School fees");
+        }
+        if (suggest.length === 0) return null;
+
+        const suggestJsx = suggest.map((s, i) => (
+          <span key={s}>{i > 0 && (i === suggest.length - 1 ? " and " : ", ")}<strong>{s}</strong></span>
+        ));
+        const ageNote = hasAges
+          ? ` (aged ${underEighteen.slice().sort((a, b) => a - b).join(", ")})`
+          : "";
+
+        return (
+          <div style={{ fontSize: 13, color: "#5a6e5e", background: "#EAF0EC", border: "1px solid #C8D8CC", borderRadius: 8, padding: "10px 14px", marginBottom: 14, display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <span style={{ flexShrink: 0, marginTop: 1 }}>✦</span>
+            <span>You have {underEighteen.length === 1 ? "a dependant" : "dependants"}{ageNote} — consider adding {suggestJsx} to your monthly budget below.</span>
+          </div>
+        );
+      })()}
 
       <div style={{ background: "#FBFAF6", border: "1.5px solid #ECE7DB", borderRadius: 12, overflow: "hidden", marginBottom: 14 }}>
         {BUDGET_CATS.map(cat => (
